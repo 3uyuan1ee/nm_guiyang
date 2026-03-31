@@ -125,13 +125,15 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 16px;
+  padding: 10px 20px;
   background: rgba(15, 23, 42, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   pointer-events: auto;
+  width: 600px;
+  max-width: 90vw;
 }
 
 .play-button {

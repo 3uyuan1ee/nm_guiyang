@@ -1,27 +1,28 @@
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import MainMap from './components/map/MainMap.vue'
 import TimeSlider from './components/ui/TimeSlider.vue'
+import CategoryFilter from './components/ui/CategoryFilter.vue'
+import Legend from './components/ui/Legend.vue'
 import { useMapState } from './composables/useMapState'
 
-// 使用全局状态管理
-const { state, filteredData, loadData } = useMapState()
+const { state, filteredData, loadData, toggleCategory, selectAllCategories, deselectAllCategories } = useMapState()
 
-// 组件挂载时加载数据
+// 所有美食数据（用于类别筛选器统计）
+const allFoodData = computed(() => state.foodData)
+
 onMounted(async () => {
   try {
     await loadData()
   } catch (error) {
-    console.error('❌ 应用初始化失败：', error)
+    console.error('应用初始化失败：', error)
   }
 })
 
-// 处理视图状态变化
 function handleViewStateChange(newViewState) {
   Object.assign(state.viewState, newViewState)
 }
 
-// 处理 hover 特征
 function handleHoverFeature({ feature }) {
   state.hoveredFeature = feature
 }
@@ -46,12 +47,23 @@ function handleHoverFeature({ feature }) {
         @hover-feature="handleHoverFeature"
       />
 
-      <!-- 左侧信息面板（预留，第 3 周实现） -->
-      <aside class="side-panel-placeholder">
-        <div class="placeholder-content">
-          <p>当前时间：{{ state.currentTime }}</p>
-          <p>显示店铺：{{ filteredData.length }} 家</p>
+      <!-- 左侧控制面板 -->
+      <aside class="side-panel">
+        <div class="panel-section">
+          <div class="panel-info">
+            <p class="info-item">当前时间：{{ state.currentTime }}</p>
+            <p class="info-item">显示店铺：{{ filteredData.length }} 家</p>
+          </div>
         </div>
+
+        <CategoryFilter
+          :food-data="allFoodData"
+          @toggle-category="toggleCategory"
+          @select-all="selectAllCategories"
+          @deselect-all="deselectAllCategories"
+        />
+
+        <Legend />
       </aside>
     </main>
 
@@ -137,24 +149,41 @@ body {
   height: 100%;
 }
 
-/* 左侧占位面板 */
-.side-panel-placeholder {
+/* 左侧控制面板 */
+.side-panel {
   position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 200px;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 16px;
-  backdrop-filter: blur(10px);
+  top: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   z-index: 50;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
 }
 
-.placeholder-content p {
+.panel-section {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px 16px;
+  backdrop-filter: blur(10px);
+}
+
+.panel-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-item {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.7);
-  margin: 4px 0;
+  margin: 0;
+}
+
+.info-item:first-child {
+  color: #22d3ee;
 }
 
 /* 底部时间轴控制器 */

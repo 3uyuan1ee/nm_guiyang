@@ -31,6 +31,17 @@ const state = reactive({
 })
 
 export function useMapState() {
+  // 所有美食类别
+  const ALL_CATEGORIES = [
+    '烧烤', '火锅', '火锅店', '酒吧', '咖啡馆', '咖啡厅',
+    '夜市', '特色餐饮', '特色/地方风味餐厅', '中餐厅',
+    '广东菜(粤菜)', '四川菜(川菜)', '湖南菜(湘菜)', '东北菜',
+    '云贵菜', '日本料理', '西餐厅(综合风味)', '外国餐厅',
+    '海鲜酒楼', '综合酒楼', '快餐厅', '麦当劳', '肯德基',
+    '甜品店', '糕饼店', '冷饮店', '茶艺馆', '休闲餐饮场所',
+    '餐饮相关', '清真菜馆'
+  ]
+
   const filteredData = computed(() => {
     return state.foodData.filter(shop => {
       if (!state.selectedCategories.includes(shop.category)) {
@@ -43,6 +54,35 @@ export function useMapState() {
       )
     })
   })
+
+  // 切换类别选择状态
+  function toggleCategory(category) {
+    const index = state.selectedCategories.indexOf(category)
+    if (index > -1) {
+      state.selectedCategories.splice(index, 1)
+    } else {
+      state.selectedCategories.push(category)
+    }
+  }
+
+  // 全选类别
+  function selectAllCategories() {
+    state.selectedCategories = [...ALL_CATEGORIES]
+  }
+
+  // 清空类别选择
+  function deselectAllCategories() {
+    state.selectedCategories = []
+  }
+
+  // 获取实际存在的类别（从数据中提取）
+  function getAvailableCategories() {
+    const categories = new Set()
+    state.foodData.forEach(shop => {
+      categories.add(shop.category)
+    })
+    return Array.from(categories)
+  }
 
   async function loadData() {
     if (state.isLoading) return
@@ -87,6 +127,10 @@ export function useMapState() {
   return {
     state,
     filteredData,
-    loadData
+    loadData,
+    toggleCategory,
+    selectAllCategories,
+    deselectAllCategories,
+    getAvailableCategories
   }
 }
