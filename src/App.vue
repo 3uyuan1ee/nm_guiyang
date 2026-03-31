@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted } from 'vue'
 import MainMap from './components/map/MainMap.vue'
+import TimeSlider from './components/ui/TimeSlider.vue'
 import { useMapState } from './composables/useMapState'
 
 // 使用全局状态管理
@@ -54,12 +55,14 @@ function handleHoverFeature({ feature }) {
       </aside>
     </main>
 
-    <!-- 底部时间轴控制器（预留，第 2 周实现） -->
+    <!-- 底部时间轴控制器 -->
     <footer class="app-footer">
-      <div class="time-placeholder">
-        <p>⏰ 时间轴控制器（第 2 周实现）</p>
-        <p class="current-time">当前时间：{{ state.currentTime }}</p>
-      </div>
+      <TimeSlider
+        v-model:currentTime="state.currentTime"
+        :min-time="'00:00'"
+        :max-time="'24:00'"
+        :auto-play-interval="800"
+      />
     </footer>
   </div>
 </template>
@@ -96,6 +99,8 @@ body {
 
 /* 顶部标题栏 */
 .app-header {
+  position: relative;
+  z-index: 100;
   flex-shrink: 0;
   padding: 16px 24px;
   background: rgba(15, 23, 42, 0.95);
@@ -121,7 +126,6 @@ body {
 .app-main {
   flex: 1;
   display: flex;
-  position: relative;
   overflow: hidden;
   min-height: 0;
 }
@@ -153,24 +157,16 @@ body {
   margin: 4px 0;
 }
 
-/* 底部占位时间轴 */
+/* 底部时间轴控制器 */
 .app-footer {
+  position: relative;
+  z-index: 100;
   flex-shrink: 0;
-  padding: 12px 24px;
+  display: flex;
+  justify-content: center;
+  padding: 16px 24px;
   background: rgba(15, 23, 42, 0.95);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-}
-
-.time-placeholder p {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
-  margin: 2px 0;
-}
-
-.current-time {
-  font-size: 16px;
-  color: #22d3ee;
-  font-weight: 600;
 }
 </style>
