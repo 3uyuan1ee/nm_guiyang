@@ -1,0 +1,26 @@
+{
+  "name": "nm_guiyang",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "d3": "^7.9.0",
+    "deck.gl": "^9.2.11",
+    "lucide-vue-next": "^1.0.0",
+    "mapbox-gl": "^3.20.0",
+    "vue": "^3.5.31"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.5",
+    "vite": "^8.0.3",
+    "vite-plugin-vue-devtools": "^8.1.1"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  }
+}
