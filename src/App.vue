@@ -3,7 +3,6 @@ import { onMounted, computed } from 'vue'
 import MainMap from './components/map/MainMap.vue'
 import TimeSlider from './components/ui/TimeSlider.vue'
 import CategoryFilter from './components/ui/CategoryFilter.vue'
-import Legend from './components/ui/Legend.vue'
 import { useMapState } from './composables/useMapState'
 
 const { state, filteredData, loadData, toggleCategory, selectAllCategories, deselectAllCategories } = useMapState()
@@ -58,12 +57,11 @@ function handleHoverFeature({ feature }) {
 
         <CategoryFilter
           :food-data="allFoodData"
+          :selected-categories="state.selectedCategories"
           @toggle-category="toggleCategory"
           @select-all="selectAllCategories"
           @deselect-all="deselectAllCategories"
         />
-
-        <Legend />
       </aside>
     </main>
 

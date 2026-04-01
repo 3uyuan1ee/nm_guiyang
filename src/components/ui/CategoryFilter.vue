@@ -34,13 +34,9 @@ import { getCategoryColorCss } from '../../utils/colorUtils'
 
 // 所有美食类别
 const ALL_CATEGORIES = [
-  '烧烤', '火锅', '火锅店', '酒吧', '咖啡馆', '咖啡厅',
-  '夜市', '特色餐饮', '特色/地方风味餐厅', '中餐厅',
-  '广东菜(粤菜)', '四川菜(川菜)', '湖南菜(湘菜)', '东北菜',
-  '云贵菜', '日本料理', '西餐厅(综合风味)', '外国餐厅',
-  '海鲜酒楼', '综合酒楼', '快餐厅', '麦当劳', '肯德基',
-  '甜品店', '糕饼店', '冷饮店', '茶艺馆', '休闲餐饮场所',
-  '餐饮相关', '清真菜馆'
+  '中餐厅', '火锅', '咖啡', '家常菜', '烧烤夜市', '酒吧',
+  '特色餐饮', '饮品', '甜品糕点', '地方菜系', '快餐',
+  '异国料理', '清真菜馆'
 ]
 
 const props = defineProps({
@@ -58,7 +54,6 @@ const emit = defineEmits(['toggle-category', 'select-all', 'deselect-all'])
 
 const categories = computed(() => ALL_CATEGORIES)
 
-// 每个类别的店铺数量
 const categoryCounts = computed(() => {
   const counts = {}
   props.foodData.forEach(shop => {
@@ -207,7 +202,7 @@ function deselectAll() {
 }
 
 .category-checkbox:checked::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 4px;
   top: 1px;
