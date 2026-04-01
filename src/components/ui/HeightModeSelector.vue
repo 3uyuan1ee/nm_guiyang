@@ -47,7 +47,7 @@ const modes = [
   {
     value: 'cost',
     label: '价格',
-    description: '根据人均消费决定柱体高度',
+    description: '经济(<50) 中等(50-100) 较高(100-150) 高端(150+)',
     icon: '💰'
   }
 ]

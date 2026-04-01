@@ -13,6 +13,10 @@ const state = reactive({
     '特色餐饮', '饮品', '甜品糕点', '地方菜系', '快餐',
     '异国料理', '清真菜馆'
   ],
+  // 评分筛选范围 (4.0-5.0)
+  ratingRange: [4.0, 5.0],
+  // 价格筛选范围 (元)
+  priceRange: [0, 500],
   viewState: {
     longitude: 106.713,
     latitude: 26.575,
@@ -38,14 +42,33 @@ export function useMapState() {
 
   const filteredData = computed(() => {
     return state.foodData.filter(shop => {
+      // 类别筛选
       if (!state.selectedCategories.includes(shop.category)) {
         return false
       }
-      return isTimeBetween(
+
+      // 营业时间筛选
+      if (!isTimeBetween(
         state.currentTime,
         shop.open_time,
         shop.close_time
-      )
+      )) {
+        return false
+      }
+
+      // 评分筛选 (heat_index/20 = 评分)
+      const rating = shop.heat_index / 20
+      if (rating < state.ratingRange[0] || rating > state.ratingRange[1]) {
+        return false
+      }
+
+      // 价格筛选
+      const cost = shop.cost || 0
+      if (cost < state.priceRange[0] || cost > state.priceRange[1]) {
+        return false
+      }
+
+      return true
     })
   })
 
@@ -81,6 +104,16 @@ export function useMapState() {
   // 设置高度模式
   function setHeightMode(mode) {
     state.heightMode = mode
+  }
+
+  // 设置评分范围
+  function setRatingRange(range) {
+    state.ratingRange = range
+  }
+
+  // 设置价格范围
+  function setPriceRange(range) {
+    state.priceRange = range
   }
 
   async function loadData() {
@@ -131,6 +164,8 @@ export function useMapState() {
     selectAllCategories,
     deselectAllCategories,
     getAvailableCategories,
-    setHeightMode
+    setHeightMode,
+    setRatingRange,
+    setPriceRange
   }
 }

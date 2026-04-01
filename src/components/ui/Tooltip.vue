@@ -19,7 +19,16 @@
 
       <div class="tooltip-row">
         <span class="label">人均：</span>
-        <span class="value">¥{{ feature.cost }}</span>
+        <span class="value">
+          ¥{{ feature.cost }}
+          <span
+            v-if="priceLevel"
+            class="price-badge"
+            :style="{ backgroundColor: priceLevel.color }"
+          >
+            {{ priceLevel.text }}
+          </span>
+        </span>
       </div>
 
       <div class="tooltip-row">
@@ -57,6 +66,16 @@ const props = defineProps({
 const categoryColor = computed(() => {
   if (!props.feature) return '#fff'
   return getCategoryColorCss(props.feature.category)
+})
+
+// 价格等级
+const priceLevel = computed(() => {
+  if (!props.feature) return ''
+  const cost = props.feature.cost || 0
+  if (cost < 50) return { text: '经济', color: '#22c55e' }  // 绿色
+  if (cost < 100) return { text: '中等', color: '#fbbf24' } // 黄色
+  if (cost < 150) return { text: '较高', color: '#f97316' } // 橙色
+  return { text: '高端', color: '#ef4444' }                // 红色
 })
 
 const tooltipStyle = computed(() => {
@@ -169,5 +188,15 @@ const tooltipStyle = computed(() => {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.7);
   line-height: 1.4;
+}
+
+.price-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  color: #0f172a;
+  font-weight: 600;
 }
 </style>

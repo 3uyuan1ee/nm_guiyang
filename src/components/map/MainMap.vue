@@ -279,14 +279,23 @@ function updateLayers() {
         // 根据评分动态调整柱体粗细（范围：0.00004 - 0.00008）
         radius = 0.00004 + ((shop.heat_index - 84) / 12) * 0.00004
       } else {
-        // 价格模式：根据人均消费计算高度
-        // 价格范围约 20-200 元
+        // 价格模式：使用分段等级，更直观
+        // 经济: <50元, 中等: 50-100元, 较高: 100-150元, 高端: >150元
         const cost = shop.cost || 50
-        const normalizedCost = Math.min(cost, 200) / 200  // 归一化到 0-1
-        elevation = Math.pow(normalizedCost * 100, 1.5) * 2
 
-        // 根据价格动态调整柱体粗细
-        radius = 0.00004 + normalizedCost * 0.00004
+        // 使用对数变换，避免极端值，同时保持相对关系
+        // log(30)≈3.4, log(100)≈4.6, log(200)≈5.3
+        const logCost = Math.log(Math.max(cost, 20))  // 最小20元
+        const minLog = Math.log(20)
+        const maxLog = Math.log(300)
+        const normalized = (logCost - minLog) / (maxLog - minLog)
+
+        // 高度：分段明显，等级差约40-60单位
+        // 30元 → ~30, 60元 → ~90, 100元 → ~140, 150元 → ~180, 200元+ → ~210
+        elevation = 20 + normalized * 200
+
+        // 半径：价格越高柱体越粗
+        radius = 0.000035 + normalized * 0.000035
       }
 
       return {

@@ -4,9 +4,10 @@ import MainMap from './components/map/MainMap.vue'
 import TimeSlider from './components/ui/TimeSlider.vue'
 import CategoryFilter from './components/ui/CategoryFilter.vue'
 import HeightModeSelector from './components/ui/HeightModeSelector.vue'
+import RangeFilter from './components/ui/RangeFilter.vue'
 import { useMapState } from './composables/useMapState'
 
-const { state, filteredData, loadData, toggleCategory, selectAllCategories, deselectAllCategories, setHeightMode } = useMapState()
+const { state, filteredData, loadData, toggleCategory, selectAllCategories, deselectAllCategories, setRatingRange, setPriceRange } = useMapState()
 
 // 所有美食数据（用于类别筛选器统计）
 const allFoodData = computed(() => state.foodData)
@@ -67,6 +68,13 @@ function handleHoverFeature({ feature }) {
 
         <HeightModeSelector
           v-model="state.heightMode"
+        />
+
+        <RangeFilter
+          :rating-range="state.ratingRange"
+          :price-range="state.priceRange"
+          @update:ratingRange="setRatingRange"
+          @update:priceRange="setPriceRange"
         />
       </aside>
     </main>
@@ -162,8 +170,27 @@ body {
   flex-direction: column;
   gap: 12px;
   z-index: 50;
-  max-height: calc(100vh - 180px);
+  max-height: calc(100vh - 140px);
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.side-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.side-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.side-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.side-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .panel-section {
