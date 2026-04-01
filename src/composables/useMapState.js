@@ -56,8 +56,8 @@ export function useMapState() {
         return false
       }
 
-      // 评分筛选 (heat_index/20 = 评分)
-      const rating = shop.heat_index / 20
+      // 评分筛选 (heat_index: 80-96 → 评分: 4.0-5.0)
+      const rating = (shop.heat_index - 80) / 16 + 4.0
       if (rating < state.ratingRange[0] || rating > state.ratingRange[1]) {
         return false
       }

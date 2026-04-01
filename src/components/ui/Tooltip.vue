@@ -14,7 +14,7 @@
     <div class="tooltip-body">
       <div class="tooltip-row">
         <span class="label">评分：</span>
-        <span class="value rating">⭐ {{ (feature.heat_index / 20).toFixed(1) }}</span>
+        <span class="value rating">⭐ {{ ((feature.heat_index - 80) / 16 + 4.0).toFixed(1) }}</span>
       </div>
 
       <div class="tooltip-row">
