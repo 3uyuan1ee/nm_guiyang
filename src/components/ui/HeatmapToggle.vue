@@ -5,12 +5,11 @@
       :class="['toggle-btn', { active: modelValue }]"
       :title="modelValue ? '隐藏热力图' : '显示热力图'"
     >
-      <span class="toggle-icon">🔥</span>
       <span class="toggle-text">美食密度热力图</span>
       <span class="toggle-status">{{ modelValue ? 'ON' : 'OFF' }}</span>
     </button>
     <p class="toggle-desc">
-      {{ modelValue ? '揭示老城"血管状" vs 新城"岛屿状"分布' : '展示美食POI密度分布' }}
+      {{ modelValue ? '老城"血管状" vs 新城"岛屿状"分布' : '展示美食POI密度分布' }}
     </p>
   </div>
 </template>

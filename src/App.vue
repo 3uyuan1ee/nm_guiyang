@@ -35,7 +35,7 @@ function handleHoverFeature({ feature }) {
     <!-- 顶部标题栏 -->
     <header class="app-header">
       <h1 class="app-title"> 食在贵阳 </h1>
-      <p class="app-subtitle">深夜山城美食与交通流量图谱</p>
+      <p class="app-subtitle">山城美食图谱</p>
     </header>
 
     <!-- 主内容区 -->
@@ -130,26 +130,32 @@ body {
 
 /* 顶部标题栏 */
 .app-header {
-  position: relative;
+  position: absolute;
+  top: 16px;
+  right: 16px;
   z-index: 100;
-  flex-shrink: 0;
-  padding: 16px 24px;
+  display: inline-flex;
+  flex-direction: column;
+  padding: 10px 16px;
   background: rgba(15, 23, 42, 0.95);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
   backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .app-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #ec4899;
-  margin: 0 0 4px 0;
+  margin: 0;
   letter-spacing: -0.5px;
+  line-height: 1.2;
 }
 
 .app-subtitle {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
   margin: 0;
 }
 
