@@ -98,12 +98,12 @@ def get_opening_hours(category, index):
 
 # 计算热度值（基于评分）
 def calculate_heat_index(rating):
-    """根据评分计算热度值，范围 80-96"""
+    """根据评分计算热度值，范围 60-96"""
     if not rating:
-        return 84  # 默认值
-    # rating 4.0-5.0 映射到 80-96
-    min_rating, max_rating = 4.0, 5.0
-    min_heat, max_heat = 80, 96
+        return 75  # 默认值（约3.75分）
+    # rating 3.0-5.0 映射到 60-96
+    min_rating, max_rating = 3.0, 5.0
+    min_heat, max_heat = 60, 96
     if rating < min_rating:
         rating = min_rating
     if rating > max_rating:

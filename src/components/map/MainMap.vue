@@ -395,15 +395,14 @@ function updateLayers() {
       let radius
 
       if (props.heightMode === 'rating') {
-        // 评分模式：以80分为基准，使用平方函数放大差距
-        // 84分 → (84-80)² = 16
-        // 90分 → (90-80)² = 100
-        // 96分 → (96-80)² = 256
-        const relativeScore = shop.heat_index - 80
-        elevation = Math.pow(relativeScore, 1.8) * 3
+        // 评分模式：以60分为基准（3.0分），使用平方函数放大差距
+        // heat_index: 60-96 → rating: 3.0-5.0
+        // 60分(3.0) → 0, 75分(3.75) → 225, 90分(4.5) → 900, 96分(5.0) → 1296
+        const relativeScore = shop.heat_index - 60
+        elevation = Math.pow(relativeScore, 1.7) * 0.8
 
-        // 根据评分动态调整柱体粗细（范围：0.00004 - 0.00008）
-        radius = 0.00004 + ((shop.heat_index - 84) / 12) * 0.00004
+        // 根据评分动态调整柱体粗细（范围：0.00003 - 0.00008）
+        radius = 0.00003 + ((shop.heat_index - 60) / 36) * 0.00005
       } else {
         // 价格模式：使用分段等级，更直观
         // 经济: <50元, 中等: 50-100元, 较高: 100-150元, 高端: >150元

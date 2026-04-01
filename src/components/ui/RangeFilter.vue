@@ -98,7 +98,7 @@ import { computed, ref } from 'vue'
 const props = defineProps({
   ratingRange: {
     type: Array,
-    default: () => [4.0, 5.0]
+    default: () => [3.0, 5.0]
   },
   priceRange: {
     type: Array,
@@ -115,7 +115,7 @@ function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value
 }
 
-const ratingMin = 4.0
+const ratingMin = 3.0
 const ratingMax = 5.0
 const priceMin = 0
 const priceMax = 500
@@ -186,8 +186,8 @@ function isPricePresetActive(preset) {
 }
 
 function resetFilters() {
-  emit('update:ratingRange', [ratingMin, ratingMax])
-  emit('update:priceRange', [priceMin, priceMax])
+  emit('update:ratingRange', [3.0, 5.0])
+  emit('update:priceRange', [0, 500])
   emit('reset')
 }
 </script>
