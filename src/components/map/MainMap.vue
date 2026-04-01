@@ -215,47 +215,173 @@ function updateLayers() {
     console.log(`路网数据: 原始 ${props.roadData.features.length} 条, 过滤后 ${roadFeatures.length} 条`)
 
     if (roadFeatures.length > 0) {
-      // 定义道路宽度映射（单位：米）
-      const ROAD_WIDTHS = {
-        'primary': 12,           // 主干道
-        'primary_link': 8,       // 主干道连接
-        'secondary': 10,         // 次干道
-        'secondary_link': 6,     // 次干道连接
-        'tertiary': 6,           // 三级道路
-        'tertiary_link': 4,      // 三级道路连接
-        'residential': 3,        // 居住区道路
-        'service': 2,            // 服务道路
-        'pedestrian': 1.5        // 人行道
+      // 道路样式配置：层次化设计
+      const ROAD_STYLES = {
+        // 高速公路 - 最醒目，金色系
+        'motorway': {
+          width: 20,
+          color: [255, 215, 0],      // 金色
+          opacity: 0.7,
+          priority: 1
+        },
+        'motorway_link': {
+          width: 12,
+          color: [255, 223, 100],    // 浅金色
+          opacity: 0.6,
+          priority: 2
+        },
+        // 干线公路 - 橙红色系，体现重要性
+        'trunk': {
+          width: 16,
+          color: [255, 140, 80],     // 橙红色
+          opacity: 0.65,
+          priority: 3
+        },
+        'trunk_link': {
+          width: 10,
+          color: [255, 160, 120],    // 浅橙红
+          opacity: 0.55,
+          priority: 4
+        },
+        // 主要道路 - 暖黄色系
+        'primary': {
+          width: 14,
+          color: [255, 200, 120],    // 暖黄色
+          opacity: 0.6,
+          priority: 5
+        },
+        'primary_link': {
+          width: 8,
+          color: [255, 210, 150],    // 浅暖黄
+          opacity: 0.5,
+          priority: 6
+        },
+        // 次要道路 - 中性灰黄
+        'secondary': {
+          width: 10,
+          color: [200, 190, 170],    // 灰黄色
+          opacity: 0.5,
+          priority: 7
+        },
+        'secondary_link': {
+          width: 6,
+          color: [210, 200, 180],    // 浅灰黄
+          opacity: 0.45,
+          priority: 8
+        },
+        // 三级道路 - 冷灰色
+        'tertiary': {
+          width: 6,
+          color: [160, 170, 180],    // 蓝灰色
+          opacity: 0.4,
+          priority: 9
+        },
+        'tertiary_link': {
+          width: 4,
+          color: [170, 180, 190],    // 浅蓝灰
+          opacity: 0.35,
+          priority: 10
+        },
+        // 居住区道路 - 深灰，低调
+        'residential': {
+          width: 3,
+          color: [100, 110, 120],    // 深灰色
+          opacity: 0.3,
+          priority: 11
+        },
+        // 人行道 - 特殊处理，虚线效果
+        'pedestrian': {
+          width: 2,
+          color: [140, 200, 220],    // 青色
+          opacity: 0.25,
+          priority: 12
+        }
       }
 
-      const pathLayer = new PathLayer({
-        id: 'road-network',
-        data: roadFeatures,
-        getPath: d => {
-          // LineString 格式: [[lon, lat], [lon, lat], ...]
-          return d.geometry.coordinates
-        },
+      // 按优先级排序，确保重要道路在上层
+      const sortedRoads = roadFeatures.sort((a, b) => {
+        const styleA = ROAD_STYLES[a.properties?.highway] || ROAD_STYLES['residential']
+        const styleB = ROAD_STYLES[b.properties?.highway] || ROAD_STYLES['residential']
+        return styleA.priority - styleB.priority
+      })
+
+      // 创建多个道路层以增加层次感
+      // 底层：所有道路的基础轮廓（稍微加宽、更透明）
+      const baseRoadLayer = new PathLayer({
+        id: 'road-base',
+        data: sortedRoads,
+        getPath: d => d.geometry.coordinates,
         getColor: d => {
-          const highway = d.properties?.highway
-          // 根据道路类型设置不同颜色
-          if (highway === 'primary' || highway === 'primary_link') {
-            return [255, 200, 150]  // 主干道：浅黄色
-          } else if (highway === 'secondary' || highway === 'secondary_link') {
-            return [200, 180, 160]  // 次干道：浅橙色
-          }
-          return [100, 116, 139]    // 其他道路：蓝灰色
+          const style = ROAD_STYLES[d.properties?.highway] || ROAD_STYLES['residential']
+          return [60, 65, 75]  // 统一深灰底色
         },
         getWidth: d => {
-          const highway = d.properties?.highway
-          return ROAD_WIDTHS[highway] || 2
+          const style = ROAD_STYLES[d.properties?.highway] || ROAD_STYLES['residential']
+          return style.width * 1.5  // 底层稍宽
         },
-        opacity: 0.5,
+        opacity: 0.15,
+        widthMinPixels: 1,
+        widthScale: 1,
+        pickable: false
+      })
+      layers.push(baseRoadLayer)
+
+      // 主层：彩色道路
+      const mainRoadLayer = new PathLayer({
+        id: 'road-main',
+        data: sortedRoads,
+        getPath: d => d.geometry.coordinates,
+        getColor: d => {
+          const style = ROAD_STYLES[d.properties?.highway]
+          if (style) return style.color
+          return [100, 110, 120]  // 默认深灰
+        },
+        getWidth: d => {
+          const style = ROAD_STYLES[d.properties?.highway] || ROAD_STYLES['residential']
+          return style.width
+        },
+        opacity: d => {
+          const style = ROAD_STYLES[d.properties?.highway] || ROAD_STYLES['residential']
+          return style.opacity
+        },
         widthMinPixels: 0.5,
         widthScale: 1,
         pickable: false
       })
+      layers.push(mainRoadLayer)
 
-      layers.push(pathLayer)
+      // 高光层：仅重要道路（motorway, trunk, primary）
+      const majorRoads = sortedRoads.filter(d => {
+        const h = d.properties?.highway
+        return ['motorway', 'motorway_link', 'trunk', 'trunk_link', 'primary', 'primary_link'].includes(h)
+      })
+
+      if (majorRoads.length > 0) {
+        const highlightRoadLayer = new PathLayer({
+          id: 'road-highlight',
+          data: majorRoads,
+          getPath: d => d.geometry.coordinates,
+          getColor: d => {
+            const style = ROAD_STYLES[d.properties?.highway]
+            if (style) {
+              // 高光层使用更亮的颜色
+              return style.color.map(c => Math.min(255, c + 40))
+            }
+            return [180, 180, 180]
+          },
+          getWidth: d => {
+            const style = ROAD_STYLES[d.properties?.highway]
+            return style ? style.width * 0.3 : 2  // 细高光线
+          },
+          opacity: 0.8,
+          widthMinPixels: 0.5,
+          widthScale: 1,
+          pickable: false
+        })
+        layers.push(highlightRoadLayer)
+      }
+
+      console.log(`路网层: ${sortedRoads.length} 条 (底色+主色+高光)`)
     }
   }
 
@@ -329,7 +455,7 @@ function updateLayers() {
 
   try {
     deckInstance.setProps({ layers })
-    console.log(`图层更新成功: 路网 + ${props.foodData.length} 个光柱（地形层已禁用）`)
+    console.log(`图层更新成功: 水系 + 路网(3层) + ${props.foodData.length} 个光柱`)
   } catch (error) {
     console.error('图层更新失败:', error)
   }
