@@ -1,10 +1,11 @@
 <template>
   <div class="height-mode-selector">
-    <div class="selector-header">
+    <div class="selector-header" @click="toggleCollapse">
       <h3>柱体高度</h3>
+      <span class="collapse-icon" :class="{ collapsed: isCollapsed }">▼</span>
     </div>
 
-    <div class="mode-options">
+    <div v-show="!isCollapsed" class="mode-options">
       <label
         v-for="mode in modes"
         :key="mode.value"
@@ -28,6 +29,8 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
+
 const props = defineProps({
   modelValue: {
     type: String,
@@ -36,6 +39,13 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue'])
+
+// 折叠状态
+const isCollapsed = ref(false)
+
+function toggleCollapse() {
+  isCollapsed.value = !isCollapsed.value
+}
 
 const modes = [
   {
@@ -64,9 +74,14 @@ const modes = [
 }
 
 .selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  user-select: none;
 }
 
 .selector-header h3 {
@@ -74,6 +89,16 @@ const modes = [
   font-weight: 600;
   color: #fff;
   margin: 0;
+}
+
+.collapse-icon {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  transition: transform 0.2s;
+}
+
+.collapse-icon.collapsed {
+  transform: rotate(-90deg);
 }
 
 .mode-options {

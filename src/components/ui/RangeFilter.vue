@@ -1,94 +1,99 @@
 <template>
   <div class="range-filter">
-    <div class="filter-header">
+    <div class="filter-header" @click="toggleCollapse">
       <h3>筛选条件</h3>
-      <button @click="resetFilters" class="reset-btn" title="重置">重置</button>
+      <div class="header-right">
+        <button @click.stop="resetFilters" class="reset-btn" title="重置">重置</button>
+        <span class="collapse-icon" :class="{ collapsed: isCollapsed }">▼</span>
+      </div>
     </div>
 
-    <!-- 评分筛选 -->
-    <div class="filter-section">
-      <div class="section-header">
-        <span class="section-label">评分</span>
-        <span class="section-value">{{ ratingRange[0] }} - {{ ratingRange[1] }}</span>
-      </div>
-      <div class="range-slider">
-        <input
-          type="range"
-          :min="ratingMin"
-          :max="ratingMax"
-          :step="0.1"
-          :value="ratingRange[0]"
-          @input="updateRatingMin"
-          class="range-input range-min"
-        />
-        <input
-          type="range"
-          :min="ratingMin"
-          :max="ratingMax"
-          :step="0.1"
-          :value="ratingRange[1]"
-          @input="updateRatingMax"
-          class="range-input range-max"
-        />
-        <div class="range-track">
-          <div
-            class="range-fill"
-            :style="ratingFillStyle"
-          ></div>
+    <div v-show="!isCollapsed">
+      <!-- 评分筛选 -->
+      <div class="filter-section">
+        <div class="section-header">
+          <span class="section-label">评分</span>
+          <span class="section-value">{{ ratingRange[0] }} - {{ ratingRange[1] }}</span>
+        </div>
+        <div class="range-slider">
+          <input
+            type="range"
+            :min="ratingMin"
+            :max="ratingMax"
+            :step="0.1"
+            :value="ratingRange[0]"
+            @input="updateRatingMin"
+            class="range-input range-min"
+          />
+          <input
+            type="range"
+            :min="ratingMin"
+            :max="ratingMax"
+            :step="0.1"
+            :value="ratingRange[1]"
+            @input="updateRatingMax"
+            class="range-input range-max"
+          />
+          <div class="range-track">
+            <div
+              class="range-fill"
+              :style="ratingFillStyle"
+            ></div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- 价格筛选 -->
-    <div class="filter-section">
-      <div class="section-header">
-        <span class="section-label">价格 (元)</span>
-        <span class="section-value">{{ priceRange[0] }} - {{ priceRange[1] }}</span>
-      </div>
-      <div class="range-slider">
-        <input
-          type="range"
-          :min="priceMin"
-          :max="priceMax"
-          :step="10"
-          :value="priceRange[0]"
-          @input="updatePriceMin"
-          class="range-input range-min"
-        />
-        <input
-          type="range"
-          :min="priceMin"
-          :max="priceMax"
-          :step="10"
-          :value="priceRange[1]"
-          @input="updatePriceMax"
-          class="range-input range-max"
-        />
-        <div class="range-track">
-          <div
-            class="range-fill"
-            :style="priceFillStyle"
-          ></div>
+      <!-- 价格筛选 -->
+      <div class="filter-section">
+        <div class="section-header">
+          <span class="section-label">价格 (元)</span>
+          <span class="section-value">{{ priceRange[0] }} - {{ priceRange[1] }}</span>
+        </div>
+        <div class="range-slider">
+          <input
+            type="range"
+            :min="priceMin"
+            :max="priceMax"
+            :step="10"
+            :value="priceRange[0]"
+            @input="updatePriceMin"
+            class="range-input range-min"
+          />
+          <input
+            type="range"
+            :min="priceMin"
+            :max="priceMax"
+            :step="10"
+            :value="priceRange[1]"
+            @input="updatePriceMax"
+            class="range-input range-max"
+          />
+          <div class="range-track">
+            <div
+              class="range-fill"
+              :style="priceFillStyle"
+            ></div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- 快捷选择 -->
-    <div class="quick-filters">
-      <button
-        v-for="preset in pricePresets"
-        :key="preset.label"
-        @click="applyPricePreset(preset)"
-        :class="['quick-btn', { active: isPricePresetActive(preset) }]"
-      >
-        {{ preset.label }}
-      </button>
+      <!-- 快捷选择 -->
+      <div class="quick-filters">
+        <button
+          v-for="preset in pricePresets"
+          :key="preset.label"
+          @click="applyPricePreset(preset)"
+          :class="['quick-btn', { active: isPricePresetActive(preset) }]"
+        >
+          {{ preset.label }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   ratingRange: {
@@ -102,6 +107,13 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:ratingRange', 'update:priceRange', 'reset'])
+
+// 折叠状态
+const isCollapsed = ref(false)
+
+function toggleCollapse() {
+  isCollapsed.value = !isCollapsed.value
+}
 
 const ratingMin = 4.0
 const ratingMax = 5.0
@@ -197,6 +209,8 @@ function resetFilters() {
   margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  user-select: none;
 }
 
 .filter-header h3 {
@@ -204,6 +218,12 @@ function resetFilters() {
   font-weight: 600;
   color: #fff;
   margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .reset-btn {
@@ -221,6 +241,16 @@ function resetFilters() {
   background: rgba(34, 211, 238, 0.2);
   border-color: rgba(34, 211, 238, 0.4);
   color: #22d3ee;
+}
+
+.collapse-icon {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  transition: transform 0.2s;
+}
+
+.collapse-icon.collapsed {
+  transform: rotate(-90deg);
 }
 
 .filter-section {

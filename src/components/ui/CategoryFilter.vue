@@ -1,14 +1,17 @@
 <template>
   <div class="category-filter">
-    <div class="filter-header">
+    <div class="filter-header" @click="toggleCollapse">
       <h3>美食类别</h3>
-      <div class="filter-actions">
-        <button @click="selectAll" class="action-btn" title="全选">全选</button>
-        <button @click="deselectAll" class="action-btn" title="清空">清空</button>
+      <div class="header-right">
+        <div class="filter-actions" @click.stop>
+          <button @click="selectAll" class="action-btn" title="全选">全选</button>
+          <button @click="deselectAll" class="action-btn" title="清空">清空</button>
+        </div>
+        <span class="collapse-icon" :class="{ collapsed: isCollapsed }">▼</span>
       </div>
     </div>
 
-    <div class="category-list">
+    <div v-show="!isCollapsed" class="category-list">
       <label
         v-for="cat in categories"
         :key="cat"
@@ -29,8 +32,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { getCategoryColorCss } from '../../utils/colorUtils'
+
+// 折叠状态
+const isCollapsed = ref(false)
 
 // 所有美食类别
 const ALL_CATEGORIES = [
@@ -85,6 +91,10 @@ function selectAll() {
 function deselectAll() {
   emit('deselect-all')
 }
+
+function toggleCollapse() {
+  isCollapsed.value = !isCollapsed.value
+}
 </script>
 
 <style scoped>
@@ -107,6 +117,8 @@ function deselectAll() {
   margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  user-select: none;
 }
 
 .filter-header h3 {
@@ -116,9 +128,25 @@ function deselectAll() {
   margin: 0;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .filter-actions {
   display: flex;
   gap: 6px;
+}
+
+.collapse-icon {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  transition: transform 0.2s;
+}
+
+.collapse-icon.collapsed {
+  transform: rotate(-90deg);
 }
 
 .action-btn {
