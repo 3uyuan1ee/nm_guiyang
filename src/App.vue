@@ -3,9 +3,10 @@ import { onMounted, computed } from 'vue'
 import MainMap from './components/map/MainMap.vue'
 import TimeSlider from './components/ui/TimeSlider.vue'
 import CategoryFilter from './components/ui/CategoryFilter.vue'
+import HeightModeSelector from './components/ui/HeightModeSelector.vue'
 import { useMapState } from './composables/useMapState'
 
-const { state, filteredData, loadData, toggleCategory, selectAllCategories, deselectAllCategories } = useMapState()
+const { state, filteredData, loadData, toggleCategory, selectAllCategories, deselectAllCategories, setHeightMode } = useMapState()
 
 // 所有美食数据（用于类别筛选器统计）
 const allFoodData = computed(() => state.foodData)
@@ -42,6 +43,7 @@ function handleHoverFeature({ feature }) {
         :food-data="filteredData"
         :road-data="state.roadData"
         :view-state="state.viewState"
+        :height-mode="state.heightMode"
         @view-state-change="handleViewStateChange"
         @hover-feature="handleHoverFeature"
       />
@@ -61,6 +63,10 @@ function handleHoverFeature({ feature }) {
           @toggle-category="toggleCategory"
           @select-all="selectAllCategories"
           @deselect-all="deselectAllCategories"
+        />
+
+        <HeightModeSelector
+          v-model="state.heightMode"
         />
       </aside>
     </main>

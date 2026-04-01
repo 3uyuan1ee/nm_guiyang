@@ -78,6 +78,11 @@ export function useMapState() {
     return Array.from(categories)
   }
 
+  // 设置高度模式
+  function setHeightMode(mode) {
+    state.heightMode = mode
+  }
+
   async function loadData() {
     if (state.isLoading) return
 
@@ -125,6 +130,7 @@ export function useMapState() {
     toggleCategory,
     selectAllCategories,
     deselectAllCategories,
-    getAvailableCategories
+    getAvailableCategories,
+    setHeightMode
   }
 }
