@@ -8,6 +8,7 @@ import { isTimeBetween } from '../utils/timeUtils'
 const state = reactive({
   currentTime: '21:00',
   heightMode: 'rating',  // 'rating' 或 'cost'
+  showHeatmap: false,    // 热力图开关
   selectedCategories: [
     '中餐厅', '火锅', '咖啡', '家常菜', '烧烤夜市', '酒吧',
     '特色餐饮', '饮品', '甜品糕点', '地方菜系', '快餐',
@@ -116,6 +117,11 @@ export function useMapState() {
     state.priceRange = range
   }
 
+  // 切换热力图显示
+  function toggleHeatmap() {
+    state.showHeatmap = !state.showHeatmap
+  }
+
   async function loadData() {
     if (state.isLoading) return
 
@@ -166,6 +172,7 @@ export function useMapState() {
     getAvailableCategories,
     setHeightMode,
     setRatingRange,
-    setPriceRange
+    setPriceRange,
+    toggleHeatmap
   }
 }

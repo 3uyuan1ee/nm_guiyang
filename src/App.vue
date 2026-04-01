@@ -5,9 +5,10 @@ import TimeSlider from './components/ui/TimeSlider.vue'
 import CategoryFilter from './components/ui/CategoryFilter.vue'
 import HeightModeSelector from './components/ui/HeightModeSelector.vue'
 import RangeFilter from './components/ui/RangeFilter.vue'
+import HeatmapToggle from './components/ui/HeatmapToggle.vue'
 import { useMapState } from './composables/useMapState'
 
-const { state, filteredData, loadData, toggleCategory, selectAllCategories, deselectAllCategories, setRatingRange, setPriceRange } = useMapState()
+const { state, filteredData, loadData, toggleCategory, selectAllCategories, deselectAllCategories, setRatingRange, setPriceRange, toggleHeatmap } = useMapState()
 
 // 所有美食数据（用于类别筛选器统计）
 const allFoodData = computed(() => state.foodData)
@@ -45,6 +46,7 @@ function handleHoverFeature({ feature }) {
         :road-data="state.roadData"
         :view-state="state.viewState"
         :height-mode="state.heightMode"
+        :show-heatmap="state.showHeatmap"
         @view-state-change="handleViewStateChange"
         @hover-feature="handleHoverFeature"
       />
@@ -57,6 +59,11 @@ function handleHoverFeature({ feature }) {
             <p class="info-item">显示店铺：{{ filteredData.length }} 家</p>
           </div>
         </div>
+
+        <HeatmapToggle
+          :model-value="state.showHeatmap"
+          @toggle="toggleHeatmap"
+        />
 
         <CategoryFilter
           :food-data="allFoodData"

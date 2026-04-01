@@ -23,6 +23,7 @@ import { Deck } from 'deck.gl'
 import { TerrainLayer } from '@deck.gl/geo-layers'
 import { PathLayer } from 'deck.gl'
 import { PolygonLayer } from 'deck.gl'
+import { HeatmapLayer } from '@deck.gl/aggregation-layers'
 import { getCategoryColor } from '../../utils/colorUtils'
 import { gcj02ToWgs84 } from '../../utils/coordUtils'
 import MapControls from './MapControls.vue'
@@ -44,6 +45,10 @@ const props = defineProps({
   heightMode: {
     type: String,
     default: 'rating'
+  },
+  showHeatmap: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -385,6 +390,45 @@ function updateLayers() {
     }
   }
 
+  // 美食密度热力图层 - 展示老城vs新城的分布差异
+  if (props.showHeatmap && props.foodData && props.foodData.length > 0) {
+    // 转换坐标用于热力图
+    const heatmapData = props.foodData.map(shop => {
+      const [lon, lat] = gcj02ToWgs84(shop.longitude, shop.latitude)
+      return {
+        coordinates: [lon, lat],
+        weight: 1  // 每个餐厅权重为1，纯密度分析
+      }
+    })
+
+    const heatmapLayer = new HeatmapLayer({
+      id: 'food-heatmap',
+      data: heatmapData,
+      getPosition: d => d.coordinates,
+      getWeight: d => d.weight,
+      // 热力图半径 - 控制点的影响范围
+      radiusPixels: 25,
+      // 强度阈值 - 低于此值的点不显示
+      threshold: 0.05,
+      // 颜色渐变：从透明到亮色
+      colorIntensity: 1,
+      // 使用渐变色：透明→青色→黄色→红色
+      colors: [
+        [0, 0, 0, 0],           // 透明
+        [0, 100, 255, 80],       // 青蓝色 (低密度)
+        [0, 200, 200, 150],      // 青色 (中低密度)
+        [255, 200, 0, 200],      // 黄色 (中高密度)
+        [255, 50, 50, 255]       // 红色 (高密度)
+      ],
+      // 每个数据点的影响权重
+      weightsTextureSize: 1024,
+      deburg: 600
+    })
+
+    layers.push(heatmapLayer)
+    console.log(`热力图层: ${heatmapData.length} 个数据点`)
+  }
+
   // 餐厅光柱层（使用 PolygonLayer 构建六边形柱体）
   if (props.foodData && props.foodData.length > 0) {
     // 预处理数据：转换坐标并生成六边形，计算放大的高度和动态半径
@@ -551,6 +595,10 @@ watch(() => props.roadData, () => {
 }, { deep: true })
 
 watch(() => props.heightMode, () => {
+  updateLayers()
+})
+
+watch(() => props.showHeatmap, () => {
   updateLayers()
 })
 
