@@ -138,6 +138,7 @@ for item in raw_data:
         'category': category,
         'longitude': item.get('lng'),
         'latitude': item.get('lat'),
+        'rating': item.get('rating', 3.5),  # 保存原始评分
         'heat_index': calculate_heat_index(item.get('rating')),
         'cost': item.get('cost', 0),
         'address': item.get('address', ''),

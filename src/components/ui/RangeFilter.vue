@@ -115,7 +115,7 @@ function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value
 }
 
-const ratingMin = 3.0
+const ratingMin = 0.0
 const ratingMax = 5.0
 const priceMin = 0
 const priceMax = 500

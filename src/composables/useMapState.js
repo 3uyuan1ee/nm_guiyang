@@ -13,7 +13,7 @@ const state = reactive({
     '特色餐饮', '饮品', '甜品糕点', '地方菜系', '快餐',
     '异国料理', '清真菜馆'
   ],
-  // 评分筛选范围 (3.0-5.0)
+  // 评分筛选范围 (3.0-5.0，实际数据0.2-4.8)
   ratingRange: [3.0, 5.0],
   // 价格筛选范围 (元)
   priceRange: [0, 500],
@@ -56,8 +56,8 @@ export function useMapState() {
         return false
       }
 
-      // 评分筛选 (heat_index: 60-96 → 评分: 3.0-5.0)
-      const rating = (shop.heat_index - 60) / 36 + 3.0
+      // 评分筛选 (直接使用原始评分)
+      const rating = shop.rating || 3.5
       if (rating < state.ratingRange[0] || rating > state.ratingRange[1]) {
         return false
       }
