@@ -401,32 +401,35 @@ function updateLayers() {
       }
     })
 
+    // 根据当前 zoom 级别动态计算半径
+    // zoom 12-15 城市视图，每像素约对应 100-20 米
+    // 使用更大的像素半径确保覆盖效果
+    const currentZoom = props.viewState.zoom || 13
+    const radiusPixels = Math.max(40, Math.min(100, (currentZoom - 10) * 20))
+
     const heatmapLayer = new HeatmapLayer({
       id: 'food-heatmap',
       data: heatmapData,
       getPosition: d => d.coordinates,
       getWeight: d => d.weight,
-      // 热力图半径 - 控制点的影响范围
-      radiusPixels: 25,
-      // 强度阈值 - 低于此值的点不显示
-      threshold: 0.05,
-      // 颜色渐变：从透明到亮色
-      colorIntensity: 1,
-      // 使用渐变色：透明→青色→黄色→红色
-      colors: [
+      // 动态像素半径，随缩放级别调整
+      radiusPixels: radiusPixels,
+      // 强度阈值
+      threshold: 0.01,
+      // 颜色强度
+      intensity: 2.0,
+      // 颜色渐变：透明→青→黄→红
+      colorRange: [
         [0, 0, 0, 0],           // 透明
-        [0, 100, 255, 80],       // 青蓝色 (低密度)
-        [0, 200, 200, 150],      // 青色 (中低密度)
-        [255, 200, 0, 200],      // 黄色 (中高密度)
-        [255, 50, 50, 255]       // 红色 (高密度)
-      ],
-      // 每个数据点的影响权重
-      weightsTextureSize: 1024,
-      deburg: 600
+        [0, 120, 255, 80],      // 青蓝色
+        [0, 255, 200, 140],     // 青绿色
+        [255, 220, 0, 180],     // 金黄色
+        [255, 80, 50, 220]      // 红橙色
+      ]
     })
 
     layers.push(heatmapLayer)
-    console.log(`热力图层: ${heatmapData.length} 个数据点`)
+    console.log(`热力图层: ${heatmapData.length} 个数据点, 半径: ${radiusPixels}px (zoom:${currentZoom})`)
   }
 
   // 餐厅光柱层（使用 PolygonLayer 构建六边形柱体）
