@@ -7,6 +7,8 @@ import HeightModeSelector from './components/ui/HeightModeSelector.vue'
 import RangeFilter from './components/ui/RangeFilter.vue'
 import HeatmapToggle from './components/ui/HeatmapToggle.vue'
 import DistrictModeToggle from './components/ui/DistrictModeToggle.vue'
+import HelpPage from './components/ui/HelpPage.vue'
+import DocumentationPage from './components/ui/DocumentationPage.vue'
 import { useMapState } from './composables/useMapState'
 import { useDistrictStats } from './composables/useDistrictStats'
 
@@ -16,6 +18,10 @@ const { loadDistrictData, assignDistrictToPOIs } = useDistrictStats()
 // 区域状态
 const districtData = ref(null)
 const districtMode = ref('off') // 'off', 'district', 'group'
+
+// 帮助页面状态
+const showHelp = ref(false)
+const showDocumentation = ref(false)
 
 // 计算属性：是否显示区域
 const showDistricts = computed(() => districtMode.value !== 'off')
@@ -57,8 +63,28 @@ function handleHoverFeature({ feature }) {
   <div class="app">
     <!-- 顶部标题栏 -->
     <header class="app-header">
-      <h1 class="app-title"> 食在贵阳 </h1>
-      <p class="app-subtitle">山城美食图谱</p>
+      <div>
+        <h1 class="app-title">食在贵阳</h1>
+        <p class="app-subtitle">山城美食图谱</p>
+      </div>
+      <button class="help-btn" @click="showHelp = true" title="使用指南">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span>使用指南</span>
+      </button>
+      <button class="doc-btn" @click="showDocumentation = true" title="项目文档">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <line x1="10" y1="9" x2="8" y2="9"/>
+        </svg>
+        <span>项目文档</span>
+      </button>
     </header>
 
     <!-- 主内容区 -->
@@ -125,6 +151,12 @@ function handleHoverFeature({ feature }) {
         :auto-play-interval="800"
       />
     </footer>
+
+    <!-- 帮助页面 -->
+    <HelpPage :is-open="showHelp" @close="showHelp = false" />
+
+    <!-- 项目文档页面 -->
+    <DocumentationPage :is-open="showDocumentation" @close="showDocumentation = false" />
   </div>
 </template>
 
@@ -164,8 +196,9 @@ body {
   top: 16px;
   right: 16px;
   z-index: 100;
-  display: inline-flex;
-  flex-direction: column;
+  display: flex;
+  align-items: center;
+  gap: 16px;
   padding: 10px 16px;
   background: rgba(15, 23, 42, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -187,6 +220,54 @@ body {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.5);
   margin: 0;
+}
+
+.help-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 8px;
+  color: #22d3ee;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.help-btn:hover {
+  background: rgba(34, 211, 238, 0.2);
+  border-color: rgba(34, 211, 238, 0.5);
+}
+
+.help-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.doc-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(236, 72, 153, 0.1);
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  border-radius: 8px;
+  color: #ec4899;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.doc-btn:hover {
+  background: rgba(236, 72, 153, 0.2);
+  border-color: rgba(236, 72, 153, 0.5);
+}
+
+.doc-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* 主内容区 */

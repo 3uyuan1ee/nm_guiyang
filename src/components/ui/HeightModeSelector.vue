@@ -40,8 +40,8 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
-// 折叠状态
-const isCollapsed = ref(false)
+// 折叠状态（默认收起）
+const isCollapsed = ref(true)
 
 function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value

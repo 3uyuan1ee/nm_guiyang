@@ -35,8 +35,8 @@
 import { computed, ref } from 'vue'
 import { getCategoryColorCss } from '../../utils/colorUtils'
 
-// 折叠状态
-const isCollapsed = ref(false)
+// 折叠状态（默认收起）
+const isCollapsed = ref(true)
 
 // 所有美食类别
 const ALL_CATEGORIES = [
