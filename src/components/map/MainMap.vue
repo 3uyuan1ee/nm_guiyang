@@ -9,8 +9,15 @@
     />
 
     <Tooltip
-      v-if="hoveredFeature"
+      v-if="hoveredFeature && !hoveredDistrict"
       :feature="hoveredFeature"
+      :x="tooltipX"
+      :y="tooltipY"
+    />
+
+    <DistrictTooltip
+      v-if="hoveredDistrictStats"
+      :stats="hoveredDistrictStats"
       :x="tooltipX"
       :y="tooltipY"
     />
@@ -18,7 +25,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, onUnmounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
 import { Deck } from 'deck.gl'
 import { TerrainLayer } from '@deck.gl/geo-layers'
 import { PathLayer } from 'deck.gl'
@@ -26,8 +33,10 @@ import { PolygonLayer } from 'deck.gl'
 import { HeatmapLayer } from '@deck.gl/aggregation-layers'
 import { getCategoryColor } from '../../utils/colorUtils'
 import { gcj02ToWgs84 } from '../../utils/coordUtils'
+import { useDistrictStats } from '../../composables/useDistrictStats'
 import MapControls from './MapControls.vue'
 import Tooltip from '../ui/Tooltip.vue'
+import DistrictTooltip from '../ui/DistrictTooltip.vue'
 
 const props = defineProps({
   foodData: {
@@ -35,6 +44,10 @@ const props = defineProps({
     default: () => []
   },
   roadData: {
+    type: Object,
+    default: null
+  },
+  districtData: {
     type: Object,
     default: null
   },
@@ -49,15 +62,37 @@ const props = defineProps({
   showHeatmap: {
     type: Boolean,
     default: false
+  },
+  showDistricts: {
+    type: Boolean,
+    default: false
+  },
+  districtMode: {
+    type: String,
+    default: 'off' // 'off', 'district', or 'group'
   }
 })
 
-const emit = defineEmits(['view-state-change', 'hover-feature'])
+const emit = defineEmits(['view-state-change', 'hover-feature', 'hover-district'])
 
 const mapContainer = ref(null)
 const hoveredFeature = ref(null)
+const hoveredDistrict = ref(null)
 const tooltipX = ref(0)
 const tooltipY = ref(0)
+
+// 使用 district stats composable
+const {
+  calculateDistrictStats,
+  getDistrictColor,
+  getAllDistricts
+} = useDistrictStats()
+
+// 计算悬停区域的统计数据
+const hoveredDistrictStats = computed(() => {
+  if (!hoveredDistrict.value || !props.foodData) return null
+  return calculateDistrictStats(props.foodData, hoveredDistrict.value.name, props.districtMode)
+})
 
 let deckInstance = null
 let terrainLayer = null
@@ -390,6 +425,76 @@ function updateLayers() {
     }
   }
 
+  // 区域高亮层
+  if (props.showDistricts && props.districtData && props.districtData.features && props.districtMode !== 'off') {
+    const districtsToShow = getAllDistricts(props.districtMode)
+
+    // 过滤并处理区域数据
+    const districtPolygons = props.districtData.features
+      .filter(f => {
+        const name = f.properties?.name
+        if (!name) return false
+
+        if (props.districtMode === 'group') {
+          // 分组模式：只保留南明、云岩（老城）和观山湖（新城）
+          return ['南明区', '云岩区', '观山湖区'].includes(name)
+        } else {
+          // 行政区模式：保留 5 个区
+          return ['南明区', '云岩区', '观山湖区', '花溪区', '乌当区'].includes(name)
+        }
+      })
+      .map(f => {
+        const name = f.properties?.name
+        let displayName = name
+        let groupColor = getDistrictColor(name, 'district')
+
+        // 分组模式下，将南明和云岩合并为"老城核心"
+        if (props.districtMode === 'group') {
+          if (name === '南明区' || name === '云岩区') {
+            displayName = '老城核心'
+            groupColor = getDistrictColor('老城核心', 'group')
+          } else if (name === '观山湖区') {
+            displayName = '现代新城'
+            groupColor = getDistrictColor('现代新城', 'group')
+          }
+        }
+
+        // 处理坐标
+        let polygon = f.geometry.coordinates
+        if (f.geometry.type === 'MultiPolygon') {
+          // MultiPolygon 使用第一个多边形
+          polygon = f.geometry.coordinates[0]
+        }
+
+        return {
+          name: displayName,
+          originalName: name,
+          polygon: polygon,
+          color: groupColor
+        }
+      })
+
+    if (districtPolygons.length > 0) {
+      const districtLayer = new PolygonLayer({
+        id: 'districts',
+        data: districtPolygons,
+        getPolygon: d => d.polygon,
+        getFillColor: d => d.color,
+        getLineColor: [255, 255, 255, 100],
+        lineWidth: 2,
+        pickable: true,
+        autoHighlight: true,
+        highlightColor: [255, 255, 255, 200],
+        filled: true,
+        stroked: true,
+        elevation: 0
+      })
+
+      layers.push(districtLayer)
+      console.log(`区域层: ${districtPolygons.length} 个区域, 模式: ${props.districtMode}`)
+    }
+  }
+
   // 美食密度热力图层 - 展示老城vs新城的分布差异
   if (props.showHeatmap && props.foodData && props.foodData.length > 0) {
     // 转换坐标用于热力图
@@ -533,6 +638,19 @@ function initializeDeck() {
         emit('view-state-change', viewState)
       },
       onHover: (info) => {
+        // 处理区域层的悬停
+        if (info.layer && info.layer.id === 'districts') {
+          hoveredDistrict.value = info.object || null
+          hoveredFeature.value = null
+          if (info.object) {
+            tooltipX.value = info.x
+            tooltipY.value = info.y
+          }
+          return
+        }
+
+        // 处理店铺柱体层的悬停
+        hoveredDistrict.value = null
         if (info.object) {
           hoveredFeature.value = info.object
           tooltipX.value = info.x
@@ -598,6 +716,18 @@ watch(() => props.heightMode, () => {
 watch(() => props.showHeatmap, () => {
   updateLayers()
 })
+
+watch(() => props.showDistricts, () => {
+  updateLayers()
+})
+
+watch(() => props.districtMode, () => {
+  updateLayers()
+})
+
+watch(() => props.districtData, () => {
+  updateLayers()
+}, { deep: true })
 
 function handleResetView() {
   const resetState = {

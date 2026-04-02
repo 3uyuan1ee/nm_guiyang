@@ -1,38 +1,93 @@
-# nm_guiyang
+# 食在贵阳 — 贵阳美食空间分布可视化
 
-This template should help get you started developing with Vue 3 in Vite.
+> 基于 16,923+ 餐饮 POI 数据的城市美食格局三维可视化分析
 
-## Recommended IDE Setup
+[在线访问](http://3uyuan1ee.me/nm_guiyang/)
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+---
 
-## Recommended Browser Setup
+## 数据说明
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+### 数据来源
 
-## Customize configuration
+| 数据类型 | 来源 | 数据量 | 获取方式 |
+|---------|------|--------|----------|
+| 餐饮 POI | 高德地图 API | 16,923 条 | API 爬取 |
+| 路网数据 | OpenStreetMap (Overpass Turbo) | ~20,000 条 | Open Data |
+| 水系数据 | OpenStreetMap (Overpass Turbo) | ~1,500 条 | Open Data |
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+### 数据维度
 
-## Project Setup
+**美食 POI 属性：**
+- 位置信息：经纬度坐标 (GCJ-02)
+- 类别信息：火锅、烧烤夜市、地方菜系、甜品糕点等 11 大类
+- 评分信息：用户评分 (0-5 分)
+- 消费信息：人均消费 (元)
+- 营业时间：开店/闭店时间
 
-```sh
-npm install
-```
+**地图数据结构：**
+- 道路等级：motorway、trunk、primary、secondary、tertiary、residential 等
+- 水系类型：river、stream、reservoir、dam
 
-### Compile and Hot-Reload for Development
+---
 
-```sh
-npm run dev
-```
+## 可视化设计
 
-### Compile and Minify for Production
+### 1. 三维城市地图
 
-```sh
-npm run build
-```
+采用 **Deck.gl** WebGL 渲染引擎，构建贵阳城市三维模型：
+
+- **水系层**：深蓝色河流/浅蓝色溪流，宽度分级显示
+- **路网层**：三层叠加渲染（底色层+主色层+高光层），道路按等级分色分宽
+- **柱体层**：六边形光柱代表餐厅，颜色区分类别
+
+### 2. 高度映射模式
+
+| 模式 | 映射关系 | 视觉编码 | 分析目的 |
+|------|----------|----------|----------|
+| 评分模式 | 评分 → 柱体高度 + 半径 | 指数函数放大差异 | 识别高口碑聚集区 |
+| 价格模式 | 人均消费 → 柱体高度 | 对数变换避免极端值 | 探索消费空间分异 |
+
+### 3. 热力图分析
+
+**设计理念**：揭示"老城 vs 新城"的二元结构差异
+
+**可视化方法**：使用 HeatmapLayer 进行密度分析，固定半径 80px，颜色梯度透明→青→黄→红
+
+---
+
+## 数据洞察
+
+### 新老城区分布模式对比
+
+| 区域 | 分布形态 | 空间特征 | 形成机制 |
+|------|----------|----------|----------|
+| **老城区**<br>(南明/云岩) | 血管状 | 沿主干道线性延伸 | 自然生长、沿街商铺 |
+| **新城**<br>(观山湖) | 岛屿状 | 以购物中心为核心点状聚集 | 规划开发、Mall 引擎 |
+
+### 分析结论
+
+贵阳美食空间分布呈现典型的"双核城市"特征：
+
+1. **老城**依托传统街道网络，美食沿街自然分布，形成"血管状"连通网络
+2. **新城**以现代购物中心为核心，美食在 Mall 内部聚集，呈现"岛屿状"离散分布
+
+这种差异反映了城市规划演进和商业形态变迁对城市空间结构的深刻影响。
+
+---
+
+## 交互功能
+
+- **3D 视角控制**：拖拽旋转、滚轮缩放、双击重置
+- **多维筛选**：类别 × 评分区间 × 价格区间
+- **时间演化**：滑动时间轴观察不同时段营业状态
+- **悬停详情**：鼠标悬停显示店铺详细信息
+
+---
+
+## 技术实现
+
+- **前端框架**：Vue 3 (Composition API)
+- **地图渲染**：Deck.gl + Mapbox GL
+- **数据处理**：Python (GCJ-02 → WGS-84 坐标转换)
+- **构建工具**：Vite

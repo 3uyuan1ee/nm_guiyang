@@ -1,21 +1,44 @@
 <script setup>
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import MainMap from './components/map/MainMap.vue'
 import TimeSlider from './components/ui/TimeSlider.vue'
 import CategoryFilter from './components/ui/CategoryFilter.vue'
 import HeightModeSelector from './components/ui/HeightModeSelector.vue'
 import RangeFilter from './components/ui/RangeFilter.vue'
 import HeatmapToggle from './components/ui/HeatmapToggle.vue'
+import DistrictModeToggle from './components/ui/DistrictModeToggle.vue'
 import { useMapState } from './composables/useMapState'
+import { useDistrictStats } from './composables/useDistrictStats'
 
 const { state, filteredData, loadData, toggleCategory, selectAllCategories, deselectAllCategories, setRatingRange, setPriceRange, toggleHeatmap } = useMapState()
+const { loadDistrictData, assignDistrictToPOIs } = useDistrictStats()
+
+// 区域状态
+const districtData = ref(null)
+const districtMode = ref('off') // 'off', 'district', 'group'
+
+// 计算属性：是否显示区域
+const showDistricts = computed(() => districtMode.value !== 'off')
 
 // 所有美食数据（用于类别筛选器统计）
 const allFoodData = computed(() => state.foodData)
 
 onMounted(async () => {
   try {
+    // 加载美食数据
     await loadData()
+
+    // 加载区域边界数据
+    const boundaryData = await loadDistrictData()
+    if (boundaryData) {
+      districtData.value = boundaryData
+
+      // 给美食数据打上区域标签
+      const labeledData = assignDistrictToPOIs(state.foodData, boundaryData)
+      state.foodData = labeledData
+
+      console.log('区域数据加载完成，已为 POI 打上区域标签')
+    }
   } catch (error) {
     console.error('应用初始化失败：', error)
   }
@@ -44,9 +67,12 @@ function handleHoverFeature({ feature }) {
       <MainMap
         :food-data="filteredData"
         :road-data="state.roadData"
+        :district-data="districtData"
         :view-state="state.viewState"
         :height-mode="state.heightMode"
         :show-heatmap="state.showHeatmap"
+        :show-districts="showDistricts"
+        :district-mode="districtMode"
         @view-state-change="handleViewStateChange"
         @hover-feature="handleHoverFeature"
       />
@@ -63,6 +89,10 @@ function handleHoverFeature({ feature }) {
         <HeatmapToggle
           :model-value="state.showHeatmap"
           @toggle="toggleHeatmap"
+        />
+
+        <DistrictModeToggle
+          v-model="districtMode"
         />
 
         <CategoryFilter
