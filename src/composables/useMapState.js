@@ -132,7 +132,7 @@ export function useMapState() {
       console.log('开始加载美食数据...')
 
       // 直接使用 fetch 加载 JSON
-      const foodResponse = await fetch(new URL('../assets/data/guiyang_food_data_enhanced.json', import.meta.url))
+      const foodResponse = await fetch(new URL('../assets/data/guiyang_food_data_fixed.json', import.meta.url))
       if (!foodResponse.ok) throw new Error(`HTTP error! status: ${foodResponse.status}`)
       state.foodData = await foodResponse.json()
       console.log(`美食数据加载成功: ${state.foodData.length} 条`)
@@ -162,6 +162,91 @@ export function useMapState() {
     }
   })
 
+  // 研究预设配置
+  const RESEARCH_PRESETS = {
+    nightlife: {
+      name: '夜经济活力',
+      description: '深夜11点，当大部分店铺打烊时，哪些区域依然灯火通明？烧烤和酒吧是夜经济的主力军。观察热力图可以发现夜经济的活跃区域：老城区沿街分布，新城则集中在商业综合体周边。',
+      config: {
+        currentTime: '23:00',
+        selectedCategories: ['烧烤夜市', '酒吧'],
+        heightMode: 'rating',
+        ratingRange: [3.5, 5.0],
+        priceRange: [0, 500],
+        showHeatmap: true
+      }
+    },
+    coffee: {
+      name: '咖啡文化地图',
+      description: '咖啡馆的分布反映了一个城市的现代程度和生活节奏。下午2点是咖啡馆的活跃时段，观察热力图可以发现：老城区的咖啡馆与街巷有机融合，新城则更多依附于写字楼和商业中心。这种分布差异体现了两区域不同的城市气质和消费习惯。',
+      config: {
+        currentTime: '14:00',
+        selectedCategories: ['咖啡'],
+        heightMode: 'rating',
+        ratingRange: [3.5, 5.0],
+        priceRange: [0, 500],
+        showHeatmap: true
+      }
+    },
+    oldNewCompare: {
+      name: '老城新城对比',
+      description: '开启热力图和分组模式，对比老城区（南明+云岩）与现代新城（观山湖）的餐饮分布差异。老城区餐饮沿街自然生长，与路网高度契合，呈现"毛细血管式"的密集分布；新城餐饮则以购物中心为核心向外辐射，形成以商业体为中心的节点分布。这揭示了两种截然不同的城市发展模式。',
+      config: {
+        currentTime: '19:00',
+        selectedCategories: [...ALL_CATEGORIES],
+        heightMode: 'rating',
+        ratingRange: [3.0, 5.0],
+        priceRange: [0, 500],
+        showHeatmap: true
+      }
+    },
+    value: {
+      name: '高性价比寻味',
+      description: '哪些区域既有高评分餐厅，价格又亲民？筛选出4.5分以上、人均150元以下的店铺，可以找到真正的"美食高地"。这些高光柱代表的店铺往往是本地人常去的老字号或性价比极高的新兴店，是品尝地道美食的最佳选择。',
+      config: {
+        currentTime: '12:00',
+        selectedCategories: [...ALL_CATEGORIES],
+        heightMode: 'rating',
+        ratingRange: [4.5, 5.0],
+        priceRange: [0, 150],
+        showHeatmap: false
+      }
+    }
+  }
+
+  // 应用研究预设
+  function applyResearchPreset(presetKey) {
+    const preset = RESEARCH_PRESETS[presetKey]
+    if (!preset) return
+
+    const config = preset.config
+
+    // 应用配置
+    state.currentTime = config.currentTime
+    state.selectedCategories = [...config.selectedCategories]
+    state.heightMode = config.heightMode
+    state.ratingRange = [...config.ratingRange]
+    state.priceRange = [...config.priceRange]
+    state.showHeatmap = config.showHeatmap
+
+    console.log(`应用研究预设: ${preset.name}`)
+  }
+
+  // 获取当前激活的研究预设信息
+  function getResearchPresetInfo(presetKey) {
+    const preset = RESEARCH_PRESETS[presetKey]
+    return preset ? { name: preset.name, description: preset.description } : null
+  }
+
+  // 获取所有研究预设列表
+  function getResearchPresets() {
+    return Object.entries(RESEARCH_PRESETS).map(([key, preset]) => ({
+      key,
+      name: preset.name,
+      description: preset.description
+    }))
+  }
+
   return {
     state,
     filteredData,
@@ -173,6 +258,9 @@ export function useMapState() {
     setHeightMode,
     setRatingRange,
     setPriceRange,
-    toggleHeatmap
+    toggleHeatmap,
+    applyResearchPreset,
+    getResearchPresetInfo,
+    getResearchPresets
   }
 }

@@ -7,17 +7,26 @@ import HeightModeSelector from './components/ui/HeightModeSelector.vue'
 import RangeFilter from './components/ui/RangeFilter.vue'
 import HeatmapToggle from './components/ui/HeatmapToggle.vue'
 import DistrictModeToggle from './components/ui/DistrictModeToggle.vue'
+import ResearchPanel from './components/ui/ResearchPanel.vue'
 import HelpPage from './components/ui/HelpPage.vue'
 import DocumentationPage from './components/ui/DocumentationPage.vue'
 import { useMapState } from './composables/useMapState'
 import { useDistrictStats } from './composables/useDistrictStats'
 
-const { state, filteredData, loadData, toggleCategory, selectAllCategories, deselectAllCategories, setRatingRange, setPriceRange, toggleHeatmap } = useMapState()
+const { state, filteredData, loadData, toggleCategory, selectAllCategories, deselectAllCategories, setRatingRange, setPriceRange, toggleHeatmap, applyResearchPreset, getResearchPresets } = useMapState()
 const { loadDistrictData, assignDistrictToPOIs } = useDistrictStats()
 
 // 区域状态
 const districtData = ref(null)
 const districtMode = ref('off') // 'off', 'district', 'group'
+
+// 研究预设状态
+const activePresetKey = ref(null)
+const showResearchModal = ref(false)
+const currentPresetInfo = ref(null)
+
+// 研究预设列表
+const researchPresets = computed(() => getResearchPresets())
 
 // 帮助页面状态
 const showHelp = ref(false)
@@ -56,6 +65,30 @@ function handleViewStateChange(newViewState) {
 
 function handleHoverFeature({ feature }) {
   state.hoveredFeature = feature
+}
+
+// 处理研究预设应用
+function handleApplyResearchPreset(preset) {
+  activePresetKey.value = preset.key
+  currentPresetInfo.value = preset
+  applyResearchPreset(preset.key)
+
+  // 特殊处理：老城新城对比需要开启分组模式
+  if (preset.key === 'oldNewCompare') {
+    districtMode.value = 'group'
+  } else if (preset.key === 'value') {
+    // 高性价比寻味使用区域模式
+    districtMode.value = 'district'
+  } else {
+    districtMode.value = 'off'
+  }
+
+  // 显示说明弹窗
+  showResearchModal.value = true
+}
+
+function closeResearchModal() {
+  showResearchModal.value = false
 }
 </script>
 
@@ -105,6 +138,13 @@ function handleHoverFeature({ feature }) {
 
       <!-- 左侧控制面板 -->
       <aside class="side-panel">
+        <!-- 研究探索面板 -->
+        <ResearchPanel
+          :presets="researchPresets"
+          :active-preset-key="activePresetKey"
+          @apply-preset="handleApplyResearchPreset"
+        />
+
         <div class="panel-section">
           <div class="panel-info">
             <p class="info-item">当前时间：{{ state.currentTime }}</p>
@@ -157,6 +197,28 @@ function handleHoverFeature({ feature }) {
 
     <!-- 项目文档页面 -->
     <DocumentationPage :is-open="showDocumentation" @close="showDocumentation = false" />
+
+    <!-- 研究说明弹窗 -->
+    <transition name="fade">
+      <div v-if="showResearchModal" class="research-modal" @click.self="closeResearchModal">
+        <div class="research-modal-content">
+          <div class="research-modal-header">
+            <h3>{{ currentPresetInfo?.name }}</h3>
+            <button class="research-close-btn" @click="closeResearchModal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <div class="research-modal-body">
+            <p>{{ currentPresetInfo?.description }}</p>
+          </div>
+          <div class="research-modal-footer">
+            <button class="research-action-btn" @click="closeResearchModal">开始探索</button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -352,5 +414,116 @@ body {
   background: rgba(15, 23, 42, 0.95);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
+}
+
+/* 研究说明弹窗 */
+.research-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.research-modal-content {
+  width: 100%;
+  max-width: 500px;
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.research-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  background: rgba(167, 139, 250, 0.15);
+  border-bottom: 1px solid rgba(167, 139, 250, 0.2);
+}
+
+.research-modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #a78bfa;
+  margin: 0;
+}
+
+.research-close-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.research-close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.research-close-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.research-modal-body {
+  padding: 24px;
+}
+
+.research-modal-body p {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.8;
+  margin: 0;
+}
+
+.research-modal-footer {
+  padding: 12px 24px 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.research-action-btn {
+  padding: 12px 28px;
+  background: rgba(167, 139, 250, 0.2);
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  border-radius: 8px;
+  color: #a78bfa;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.research-action-btn:hover {
+  background: rgba(167, 139, 250, 0.3);
+  border-color: rgba(167, 139, 250, 0.6);
+}
+
+/* 过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
