@@ -76,9 +76,31 @@
               <li><strong>高度模式切换：</strong>在不同分析维度间快速切换，促进多角度理解</li>
               <li><strong>3D 视角控制：</strong>倾斜视角同时展示空间位置与数值高度，增强立体感</li>
               <li><strong>悬停提示：</strong>提供详细信息，弥补视觉编码的信息密度限制</li>
+              <li><strong>研究预设快速加载：</strong>一键切换分析场景（夜经济、咖啡文化、老城新城对比、高性价比寻味）</li>
+              <li><strong>区域对比模式：</strong>分组展示老城区与观山湖区，悬停显示区域统计指标</li>
+              <li><strong>数据导出功能：</strong>支持导出当前筛选结果为 CSV 文件，便于后续分析</li>
+              <li><strong>2D/3D 视图切换：</strong>根据分析需求在平面地图和立体视图间切换</li>
             </ul>
 
-            <h3>2.3 替代方案考虑与最终决策</h3>
+            <h3>2.3 实时响应能力</h3>
+            <p>本系统采用 Vue 3 响应式状态管理，所有用户交互均可实时触发视图更新：</p>
+            <ul class="feature-list">
+              <li><strong>筛选联动：</strong>类别、评分、价格任一条件变化，地图立即重绘显示符合条件的数据</li>
+              <li><strong>时间轴动画：</strong>拖动时间滑块时，柱体实时显示/隐藏，无延迟反馈</li>
+              <li><strong>悬停即时反馈：</strong>鼠标悬停在柱体上，立即显示店铺名称、评分、价格、地址等信息</li>
+              <li><strong>统计实时更新：</strong>左上角实时显示当前筛选结果数量</li>
+            </ul>
+
+            <h3>2.4 数据仪表板设计</h3>
+            <p>点击顶部"数据仪表板"可查看深度分析图表，采用 D3.js 实现：</p>
+            <ul class="feature-list">
+              <li><strong>24小时呼吸曲线：</strong>面积图对比老城区和观山湖区各时段活跃度，揭示城市昼夜节律</li>
+              <li><strong>性价比散点图：</strong>双区域对比散点分布，识别高性价比聚集区域</li>
+              <li><strong>香农熵玫瑰图：</strong>展示区域餐饮品类多样性，分析结构均衡度</li>
+              <li><strong>数据洞察自动生成：</strong>根据当前筛选数据自动生成分析结论</li>
+            </ul>
+
+            <h3>2.5 替代方案考虑与最终决策</h3>
 
             <div class="alternative-box">
               <h4>方案 A：2D 散点图 vs 3D 柱体图</h4>
@@ -166,26 +188,26 @@
               <tbody>
                 <tr>
                   <td>Vue.js</td>
-                  <td>3.x</td>
+                  <td>3.5.x</td>
                   <td>前端框架，响应式状态管理</td>
                   <td>MIT</td>
                 </tr>
                 <tr>
                   <td>Deck.gl</td>
-                  <td>8.x</td>
+                  <td>9.2.x</td>
                   <td>WebGL 大规模数据渲染</td>
                   <td>MIT</td>
                 </tr>
                 <tr>
                   <td>Vite</td>
-                  <td>5.x</td>
+                  <td>8.0.x</td>
                   <td>构建工具</td>
                   <td>MIT</td>
                 </tr>
                 <tr>
                   <td>D3.js</td>
-                  <td>7.x</td>
-                  <td>数据可视化（柱状图绘制）</td>
+                  <td>7.9.x</td>
+                  <td>数据可视化（仪表板图表）</td>
                   <td>BSD-3</td>
                 </tr>
               </tbody>
@@ -194,10 +216,44 @@
             <h3>3.3 参考案例</h3>
             <p>本项目的设计思路参考了以下优秀可视化案例：</p>
             <ul class="feature-list">
-              <li><strong>Uber Movement (Uber Eats)</strong> - 实时交通与餐饮需求可视化，使用热力图展示城市活力</li>
-              <li><strong>NYC Taxi Trips Visualization</strong> - 经典的 3D 城市数据可视化案例，展示时间维度动画</li>
-              <li><strong>Mapbox GL Examples</strong> - 3D 建筑与柱体图层的实现参考</li>
+              <li><strong>Uber Movement (Uber Eats)</strong> - 实时交通与餐饮需求可视化，使用热力图展示城市活力 </li>
+              <li><strong>NYC Taxi Trips Visualization</strong> - 经典的 3D 城市数据可视化案例，展示时间维度动画 </li>
+              <li><strong>Mapbox GL Examples</strong> - 3D 建筑与柱体图层的实现参考 </li>
             </ul>
+
+            <h3>3.4 研究预设设计</h3>
+            <p>为降低用户探索门槛，系统预设了四个研究场景，每个场景对应特定的研究问题：</p>
+            <table class="decision-table">
+              <thead>
+                <tr>
+                  <th>预设名称</th>
+                  <th>研究问题</th>
+                  <th>筛选条件</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>夜经济活力</td>
+                  <td>深夜时段烧烤和酒吧的聚集区域在哪里？</td>
+                  <td>时间22:00-02:00 + 烧烤夜市/酒吧</td>
+                </tr>
+                <tr>
+                  <td>咖啡文化地图</td>
+                  <td>咖啡馆分布反映的城市现代化程度如何？</td>
+                  <td>时间14:00-17:00 + 咖啡类别</td>
+                </tr>
+                <tr>
+                  <td>老城新城对比</td>
+                  <td>新老城区餐饮分布特征有何差异？</td>
+                  <td>区域分组模式 + 全类别</td>
+                </tr>
+                <tr>
+                  <td>高性价比寻味</td>
+                  <td>高评分低价格的店铺聚集在哪些区域？</td>
+                  <td>评分≥3.8 + 价格≤120</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
 
@@ -211,7 +267,7 @@
                 <div class="timeline-dot"></div>
                 <div class="timeline-content">
                   <h4>阶段一：数据获取与处理</h4>
-                  <p>使用 Python 爬取高德地图 POI 数据，进行数据清洗、类别归并、坐标转换（GCJ-02 → WGS-84）</p>
+                  <p>使用 Python 爬取高德地图 POI 数据，采集贵阳五区餐饮店铺 16,893 条；进行数据清洗、类别归并（13大类）、坐标转换（GCJ-02 → WGS-84）</p>
                   <p class="timeline-note">耗时约 8 小时</p>
                 </div>
               </div>
@@ -235,30 +291,31 @@
                 <div class="timeline-dot"></div>
                 <div class="timeline-content">
                   <h4>阶段四：交互功能开发</h4>
-                  <p>开发筛选面板、热力图切换、区域对比分析、悬停提示框</p>
+                  <p>开发筛选面板、热力图切换、区域对比分析、悬停提示框、研究预设快速加载、数据导出功能</p>
                   <p class="timeline-note">耗时约 12 小时</p>
                 </div>
               </div>
               <div class="timeline-item">
                 <div class="timeline-dot"></div>
                 <div class="timeline-content">
-                  <h4>阶段五：优化与部署</h4>
-                  <p>性能优化、样式调整、GitHub Pages 部署配置</p>
-                  <p class="timeline-note">耗时约 6 小时</p>
+                  <h4>阶段五：数据仪表板与部署</h4>
+                  <p>使用 D3.js 开发数据仪表板（24小时呼吸曲线、性价比散点图、香农熵玫瑰图），性能优化、样式调整、GitHub Pages 部署配置</p>
+                  <p class="timeline-note">耗时约 10 小时</p>
                 </div>
               </div>
             </div>
 
             <h3>4.2 开发耗时总结</h3>
             <div class="summary-box">
-              <p><strong>总工时：</strong>约 42 小时（约 5-6 个工作日）</p>
-              <p><strong>耗时最多的环节：</strong>交互功能开发（约占 29%）</p>
+              <p><strong>总工时：</strong>约 46 小时（约 6 个工作日）</p>
+              <p><strong>耗时最多的环节：</strong>交互功能开发（约占 26%）</p>
               <p><strong>主要原因：</strong></p>
               <ul>
                 <li>Vue 3 响应式状态管理较复杂，需要仔细设计数据流</li>
                 <li>Deck.gl 图层交互（悬停、点击）调试困难</li>
                 <li>区域对比分析涉及点-多边形匹配算法，需要多次优化</li>
                 <li>UI 组件的折叠/展开动画需要细致调整</li>
+                <li>D3.js 与 Vue 3 集成需要手动操作 DOM，增加了复杂度</li>
               </ul>
             </div>
 
