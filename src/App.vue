@@ -10,6 +10,7 @@ import DistrictModeToggle from './components/ui/DistrictModeToggle.vue'
 import ResearchPanel from './components/ui/ResearchPanel.vue'
 import HelpPage from './components/ui/HelpPage.vue'
 import DocumentationPage from './components/ui/DocumentationPage.vue'
+import DashboardPanel from './components/ui/DashboardPanel.vue'
 import { useMapState } from './composables/useMapState'
 import { useDistrictStats } from './composables/useDistrictStats'
 
@@ -31,6 +32,7 @@ const researchPresets = computed(() => getResearchPresets())
 // 帮助页面状态
 const showHelp = ref(false)
 const showDocumentation = ref(false)
+const showDashboard = ref(false)
 
 // 计算属性：是否显示区域
 const showDistricts = computed(() => districtMode.value !== 'off')
@@ -50,9 +52,14 @@ onMounted(async () => {
 
       // 给美食数据打上区域标签
       const labeledData = assignDistrictToPOIs(state.foodData, boundaryData)
-      state.foodData = labeledData
+      // 清空原数组并重新填充，确保响应式更新
+      state.foodData.splice(0, state.foodData.length)
+      state.foodData.push(...labeledData)
 
-      console.log('区域数据加载完成，已为 POI 打上区域标签')
+      // 统计区域分配结果
+      const oldCity = state.foodData.filter(p => p.district === '南明区' || p.district === '云岩区').length
+      const newCity = state.foodData.filter(p => p.district === '观山湖区').length
+      console.log(`区域标注完成: 老城区 ${oldCity} 家, 新城 ${newCity} 家`)
     }
   } catch (error) {
     console.error('应用初始化失败：', error)
@@ -141,6 +148,15 @@ function handleResetAll() {
         </svg>
         <span>项目文档</span>
       </button>
+      <button class="dashboard-btn" @click="showDashboard = true" title="数据仪表板">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <span>数据仪表板</span>
+      </button>
     </header>
 
     <!-- 主内容区 -->
@@ -221,6 +237,15 @@ function handleResetAll() {
 
     <!-- 项目文档页面 -->
     <DocumentationPage :is-open="showDocumentation" @close="showDocumentation = false" />
+
+    <!-- 数据仪表板 -->
+    <DashboardPanel
+      :is-open="showDashboard"
+      :filtered-data="filteredData"
+      :all-data="state.foodData"
+      :current-time="state.currentTime"
+      @close="showDashboard = false"
+    />
 
     <!-- 研究说明弹窗 -->
     <transition name="fade">
@@ -352,6 +377,30 @@ body {
 }
 
 .doc-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dashboard-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  color: #10b981;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dashboard-btn:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.dashboard-btn svg {
   width: 18px;
   height: 18px;
 }

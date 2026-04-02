@@ -96,6 +96,20 @@ const hoveredDistrictStats = computed(() => {
 let deckInstance = null
 let terrainLayer = null
 
+// viewState 更新节流（避免频繁更新）
+let ViewStateUpdateTimer = null
+const ViewStateUpdateDelay = 16  // 约60fps
+
+function scheduleViewStateUpdate(viewState) {
+  if (ViewStateUpdateTimer) return
+  ViewStateUpdateTimer = setTimeout(() => {
+    if (deckInstance) {
+      deckInstance.setProps({ viewState: { ...viewState } })
+    }
+    ViewStateUpdateTimer = null
+  }, ViewStateUpdateDelay)
+}
+
 // ========== 样式配置（移到函数外部，避免重复创建）==========
 
 // 道路样式配置：层次化设计
@@ -351,28 +365,11 @@ function updateLayers() {
     layers.push(waterLayer)
   }
 
-  // ========== 路网层（使用预处理数据）==========
+  // ========== 路网层（使用预处理数据，优化为2层渲染）==========
   const { roads: sortedRoads, majorRoads } = preprocessRoadData(props.roadData)
 
   if (sortedRoads.length > 0) {
-    // 底层：所有道路的基础轮廓
-    const baseRoadLayer = new PathLayer({
-      id: 'road-base',
-      data: sortedRoads,
-      getPath: d => d.geometry.coordinates,
-      getColor: () => [60, 65, 75],
-      getWidth: d => {
-        const style = ROAD_STYLES[d.properties?.highway] || ROAD_STYLES['residential']
-        return style.width * 1.5
-      },
-      opacity: 0.15,
-      widthMinPixels: 1,
-      widthScale: 1,
-      pickable: false
-    })
-    layers.push(baseRoadLayer)
-
-    // 主层：彩色道路
+    // 主层：彩色道路（合并底层效果，稍微加宽并降低透明度作为轮廓）
     const mainRoadLayer = new PathLayer({
       id: 'road-main',
       data: sortedRoads,
@@ -383,11 +380,11 @@ function updateLayers() {
       },
       getWidth: d => {
         const style = ROAD_STYLES[d.properties?.highway] || ROAD_STYLES['residential']
-        return style.width
+        return style.width * 1.1  // 稍微加宽替代底层
       },
       opacity: d => {
         const style = ROAD_STYLES[d.properties?.highway] || ROAD_STYLES['residential']
-        return style.opacity
+        return style.opacity * 0.9  // 稍微降低透明度
       },
       widthMinPixels: 0.5,
       widthScale: 1,
@@ -417,7 +414,7 @@ function updateLayers() {
       layers.push(highlightRoadLayer)
     }
 
-    console.log(`路网层: ${sortedRoads.length} 条 (底色+主色+高光)`)
+    console.log(`路网层: ${sortedRoads.length} 条 (主色+高光)`)
   }
 
   // 区域高亮层
@@ -678,9 +675,34 @@ function initializeDeck() {
 
 onMounted(() => {
   initializeDeck()
+
+  // 添加 ResizeObserver 确保画布正确调整大小
+  const resizeObserver = new ResizeObserver(() => {
+    if (deckInstance) {
+      deckInstance.redraw()
+    }
+  })
+  if (mapContainer.value) {
+    resizeObserver.observe(mapContainer.value)
+  }
+
+  // 存储清理函数
+  window._mapResizeObserver = resizeObserver
 })
 
 onUnmounted(() => {
+  // 清理节流定时器
+  if (ViewStateUpdateTimer) {
+    clearTimeout(ViewStateUpdateTimer)
+    ViewStateUpdateTimer = null
+  }
+
+  // 清理 ResizeObserver
+  if (window._mapResizeObserver) {
+    window._mapResizeObserver.disconnect()
+    delete window._mapResizeObserver
+  }
+
   if (deckInstance) {
     deckInstance.finalize()
     deckInstance = null
@@ -688,12 +710,8 @@ onUnmounted(() => {
 })
 
 watch(() => props.viewState, (newViewState) => {
-  if (deckInstance) {
-    deckInstance.setProps({
-      viewState: { ...newViewState }
-    })
-  }
-}, { deep: true })
+  scheduleViewStateUpdate(newViewState)
+})
 
 watch(() => props.foodData, () => {
   updateLayers()
@@ -751,6 +769,7 @@ function handleToggle2D() {
   position: relative;
   width: 100%;
   height: 100%;
+  min-height: 400px;
   background: #0f172a;
   overflow: hidden;
 }
@@ -758,5 +777,13 @@ function handleToggle2D() {
 .map-container-inner {
   width: 100%;
   height: 100%;
+  min-height: 400px;
+}
+
+/* Deck.gl 画布样式 */
+:deep(.deck-canvas) {
+  width: 100% !important;
+  height: 100% !important;
+  outline: none;
 }
 </style>

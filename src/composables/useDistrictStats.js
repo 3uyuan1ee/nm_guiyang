@@ -107,9 +107,10 @@ export function useDistrictStats() {
   // 加载区域边界数据
   async function loadDistrictData() {
     try {
-      const response = await fetch('/nm_guiyang/src/assets/data/guiyang_district_boundary.geojson')
+      const response = await fetch(new URL('../assets/data/guiyang_district_boundary.geojson', import.meta.url))
       const data = await response.json()
       districtData.value = data
+      console.log('区域边界数据加载成功，features:', data.features?.length)
       return data
     } catch (error) {
       console.error('加载区域边界数据失败:', error)
@@ -148,6 +149,7 @@ export function useDistrictStats() {
 
     // 为每个 POI 分配区域
     const assigned = pois.map(poi => {
+      // 使用原始坐标（GCJ-02），与边界数据坐标系一致
       const point = [poi.longitude, poi.latitude]
       let district = null
 
