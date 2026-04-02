@@ -88,24 +88,6 @@ function hslToRgb(h, s, l) {
 }
 
 /**
- * 根据热度值生成渐变色（从蓝到红）
- * @param {number} heatIndex - 热度值（0-100）
- * @returns {number[]} RGB 颜色数组
- * @example
- * getHeatColor(0)   // => [0, 255, 200] (偏蓝)
- * getHeatColor(50)  // => [127, 127, 200] (紫色)
- * getHeatColor(100) // => [255, 0, 200] (偏红)
- */
-export function getHeatColor(heatIndex) {
-  const ratio = heatIndex / 100
-  return [
-    Math.floor(255 * ratio),           // 红色分量随热度增加
-    Math.floor(255 * (1 - ratio) * 0.8), // 绿色分量随热度减少
-    200                                 // 蓝色分量保持
-  ]
-}
-
-/**
  * 将 RGB 数组转换为 CSS 颜色字符串
  * @param {number[]} rgb - RGB 数组 [r, g, b]
  * @returns {string} CSS 颜色字符串
