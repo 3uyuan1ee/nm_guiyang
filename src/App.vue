@@ -90,6 +90,29 @@ function handleApplyResearchPreset(preset) {
 function closeResearchModal() {
   showResearchModal.value = false
 }
+
+// 重置所有状态
+function handleResetAll() {
+  // 重置时间
+  state.currentTime = '21:00'
+  // 重置类别选择（全选）
+  selectAllCategories()
+  // 重置高度模式
+  state.heightMode = 'rating'
+  // 重置评分范围
+  state.ratingRange = [3.0, 5.0]
+  // 重置价格范围
+  state.priceRange = [0, 500]
+  // 关闭热力图
+  state.showHeatmap = false
+  // 重置区域模式
+  districtMode.value = 'off'
+  // 清除研究预设
+  activePresetKey.value = null
+  currentPresetInfo.value = null
+
+  console.log('重置所有筛选条件')
+}
 </script>
 
 <template>
@@ -134,6 +157,7 @@ function closeResearchModal() {
         :district-mode="districtMode"
         @view-state-change="handleViewStateChange"
         @hover-feature="handleHoverFeature"
+        @reset-all="handleResetAll"
       />
 
       <!-- 左侧控制面板 -->
@@ -147,7 +171,7 @@ function closeResearchModal() {
 
         <div class="panel-section">
           <div class="panel-info">
-            <p class="info-item">当前时间：{{ state.currentTime }}</p>
+<!--            <p class="info-item">当前时间：{{ state.currentTime }}</p>-->
             <p class="info-item">显示店铺：{{ filteredData.length }} 家</p>
           </div>
         </div>
@@ -405,15 +429,12 @@ body {
 
 /* 底部时间轴控制器 */
 .app-footer {
-  position: relative;
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 100;
   flex-shrink: 0;
-  display: flex;
-  justify-content: center;
-  padding: 16px 24px;
-  background: rgba(15, 23, 42, 0.95);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
 }
 
 /* 研究说明弹窗 */

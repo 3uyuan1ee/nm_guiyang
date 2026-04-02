@@ -73,7 +73,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['view-state-change', 'hover-feature', 'hover-district'])
+const emit = defineEmits(['view-state-change', 'hover-feature', 'hover-district', 'reset-all'])
 
 const mapContainer = ref(null)
 const hoveredFeature = ref(null)
@@ -738,7 +738,8 @@ function handleResetView() {
     bearing: -20
   }
   emit('view-state-change', resetState)
-  console.log('重置视角')
+  emit('reset-all')
+  console.log('重置所有状态')
 }
 
 function handleToggle2D() {

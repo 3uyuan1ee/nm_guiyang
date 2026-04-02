@@ -124,21 +124,21 @@ onUnmounted(() => {
   z-index: 200;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 20px;
-  background: rgba(15, 23, 42, 0.9);
+  gap: 14px;
+  padding: 12px 20px;
+  background: rgba(15, 23, 42, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
+  border-radius: 14px;
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   pointer-events: auto;
-  width: 600px;
+  width: 520px;
   max-width: 90vw;
 }
 
 .play-button {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(30, 41, 59, 0.9);
@@ -156,6 +156,7 @@ onUnmounted(() => {
 .play-button:hover {
   background: rgba(34, 211, 238, 0.3);
   border-color: rgba(34, 211, 238, 0.6);
+  transform: scale(1.05);
 }
 
 .play-button.playing {
@@ -164,16 +165,17 @@ onUnmounted(() => {
 }
 
 .time-value {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #22d3ee;
   font-family: 'Courier New', monospace;
-  min-width: 55px;
+  min-width: 52px;
+  letter-spacing: 0.5px;
 }
 
 .time-slider {
   flex: 1;
-  height: 5px;
+  height: 6px;
   -webkit-appearance: none;
   appearance: none;
   background: rgba(255, 255, 255, 0.15);
@@ -185,8 +187,8 @@ onUnmounted(() => {
 
 .time-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: #22d3ee;
   cursor: pointer;
@@ -196,12 +198,12 @@ onUnmounted(() => {
 
 .time-slider::-webkit-slider-thumb:hover {
   background: #67e8f9;
-  transform: scale(1.2);
+  transform: scale(1.15);
 }
 
 .time-slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: #22d3ee;
   cursor: pointer;
@@ -211,7 +213,10 @@ onUnmounted(() => {
 
 .time-hint {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px 10px;
+  border-radius: 12px;
   flex-shrink: 0;
 }
 </style>

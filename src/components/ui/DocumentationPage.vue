@@ -302,6 +302,18 @@
                 <p><strong>问题：</strong>在网格重叠扫描时，同一家店会被采集多次。</p>
                 <p><strong>解决：</strong>利用 name + lng + lat 生成唯一哈希键，在内存和磁盘间进行动态去重。</p>
               </div>
+
+              <div class="challenge-box">
+                <h4>难点 6：原始数据分类错误</h4>
+                <p><strong>问题：</strong>API 返回的类别标签过于粗糙，大量店铺被错误归类。例如，"大力铁板烧"、"蒋记龙府大竹签烤肉"、"大胖刘烙锅"等本应属于烧烤夜市的店铺被归类为中餐厅，导致类别分布严重失衡（中餐厅7672家，烧烤夜市仅106家）。</p>
+                <p><strong>解决：</strong>根据店名关键词重新分类，建立规则匹配引擎。例如包含"铁板烧"、"烤肉"、"烤鱼"、"烧烤"、"烙锅"等关键词的店铺重新归类为"烧烤夜市"；包含"火锅"、"串串"、"夺夺粉"、"清水烫"等关键词的重新归类为"火锅"。共修正4650条数据的分类，并同步更新营业时间。</p>
+              </div>
+
+              <div class="challenge-box">
+                <h4>难点 7：非美食类别混入</h4>
+                <p><strong>问题：</strong>API 返回的数据中混入了商场、培训机构、酒店等30条非美食POI，干扰分析结果。</p>
+                <p><strong>解决：</strong>建立非美食类别黑名单，在数据预处理阶段过滤掉这些无关数据，确保分析结果纯粹聚焦餐饮业态。</p>
+              </div>
             </div>
 
             <div class="challenge-category">
@@ -309,19 +321,19 @@
               <p class="category-desc">为了让分析有意义，必须给数据加上"行政外壳"。</p>
 
               <div class="challenge-box">
-                <h4>难点 6：行政区划的模糊性</h4>
+                <h4>难点 8：行政区划的模糊性</h4>
                 <p><strong>问题：</strong>贵阳的区划（如观山湖与云岩的分界）在普通搜索中很难拿到矢量边界。</p>
                 <p><strong>解决：</strong>学习 Overpass Turbo 语法，通过 admin_level=6 结合 relation 语法，从 OSM 数据库中抠出精准的五个区边界 GeoJSON。</p>
               </div>
 
               <div class="challenge-box">
-                <h4>难点 7：底图依赖问题</h4>
+                <h4>难点 9：底图依赖问题</h4>
                 <p><strong>问题：</strong>为摆脱对 Mapbox Token 的商业依赖，需要自己处理所有底图渲染逻辑。</p>
                 <p><strong>解决：</strong>探索 Deck.gl 独立渲染模式，自己处理路网、水系、建筑的所有 GeoJSON 渲染逻辑。</p>
               </div>
 
               <div class="challenge-box">
-                <h4>难点 8：区域 POI 分配</h4>
+                <h4>难点 10：区域 POI 分配</h4>
                 <p><strong>问题：</strong>需要判断每个 POI 属于哪个行政区。</p>
                 <p><strong>解决：</strong>实现射线法点-多边形包含检测算法，为 POI 打上区域标签。</p>
               </div>
@@ -332,19 +344,19 @@
               <p class="category-desc">这是最高级的困难：如何让这堆经纬度不仅仅是一堆数字？</p>
 
               <div class="challenge-box">
-                <h4>难点 9：意义的匮乏感</h4>
+                <h4>难点 11：意义的匮乏感</h4>
                 <p><strong>问题：</strong>最初只是"打点"，看起来毫无深度。</p>
                 <p><strong>解决：</strong>通过引入"城市性格对比"（老城有机路网 vs 新城网格路网）和"阶层空间分析"（光柱高度代表价格，亮度代表评分），赋予了数据社会学和城市研究的哲理深度。</p>
               </div>
 
               <div class="challenge-box">
-                <h4>难点 10：动态叙事</h4>
+                <h4>难点 12：动态叙事</h4>
                 <p><strong>问题：</strong>如何展示"深夜"的主题？</p>
                 <p><strong>解决：</strong>通过时间轴控制营业状态的显隐，模拟城市灯火随时间流逝的熄灭与点亮。</p>
               </div>
 
               <div class="challenge-box">
-                <h4>难点 11：大规模数据渲染性能</h4>
+                <h4>难点 13：大规模数据渲染性能</h4>
                 <p><strong>问题：</strong>16,000+ 柱体同时渲染导致帧率下降。</p>
                 <p><strong>解决：</strong>使用时间筛选减少同时渲染的柱体数量，优化柱体几何复杂度。</p>
               </div>
