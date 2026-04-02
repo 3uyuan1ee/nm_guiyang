@@ -120,6 +120,40 @@ function handleResetAll() {
 
   console.log('重置所有筛选条件')
 }
+
+// 导出当前筛选数据
+function handleExportData() {
+  if (filteredData.value.length === 0) {
+    alert('当前没有筛选数据，请调整筛选条件')
+    return
+  }
+
+  const headers = ['名称', '类别', '评分', '价格(元)', '区域', '营业时间', '地址']
+  const rows = filteredData.value.map(shop => [
+    shop.name || '',
+    shop.category || '',
+    (shop.rating || 0).toFixed(1),
+    shop.cost || 0,
+    shop.district || '',
+    `${shop.open_time || ''}-${shop.close_time || ''}`,
+    shop.address || ''
+  ])
+
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+  ].join('\n')
+
+  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `贵阳美食数据_${state.currentTime.replace(':', '-')}_${filteredData.value.length}家.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+
+  console.log(`导出数据: ${filteredData.value.length} 条记录`)
+}
 </script>
 
 <template>
@@ -174,6 +208,7 @@ function handleResetAll() {
         @view-state-change="handleViewStateChange"
         @hover-feature="handleHoverFeature"
         @reset-all="handleResetAll"
+        @export-data="handleExportData"
       />
 
       <!-- 左侧控制面板 -->

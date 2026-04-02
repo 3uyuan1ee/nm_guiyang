@@ -6,6 +6,7 @@
       :pitch="props.viewState.pitch"
       @reset-view="handleResetView"
       @toggle-2d="handleToggle2D"
+      @export-data="handleExportData"
     />
 
     <Tooltip
@@ -72,7 +73,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['view-state-change', 'hover-feature', 'hover-district', 'reset-all'])
+const emit = defineEmits(['view-state-change', 'hover-feature', 'hover-district', 'reset-all', 'export-data'])
 
 const mapContainer = ref(null)
 const hoveredFeature = ref(null)
@@ -761,6 +762,10 @@ function handleToggle2D() {
     pitch: newPitch
   })
   console.log(`切换视图: pitch ${props.viewState.pitch} -> ${newPitch}`)
+}
+
+function handleExportData() {
+  emit('export-data')
 }
 </script>
 

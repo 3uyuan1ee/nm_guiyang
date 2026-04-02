@@ -1,5 +1,12 @@
 <template>
   <div class="map-controls">
+    <button @click="handleExport" class="control-btn export-btn" title="导出当前筛选数据">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </button>
     <button @click="handleReset" class="control-btn reset-btn" title="重置所有选项">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-9 9"/>
@@ -26,7 +33,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['reset-view', 'toggle-2d'])
+const emit = defineEmits(['reset-view', 'toggle-2d', 'export-data'])
 
 const is3D = computed(() => props.pitch > 0)
 
@@ -38,6 +45,10 @@ function handleReset() {
 function handleToggle() {
   console.log(`切换视图: ${is3D.value ? '3D -> 2D' : '2D -> 3D'}`)
   emit('toggle-2d')
+}
+
+function handleExport() {
+  emit('export-data')
 }
 </script>
 
@@ -86,6 +97,11 @@ function handleToggle() {
 .reset-btn:hover {
   background: rgba(239, 68, 68, 0.2);
   border-color: rgba(239, 68, 68, 0.4);
+}
+
+.export-btn:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.4);
 }
 
 .view-btn:hover {
