@@ -3,7 +3,8 @@
  */
 
 import { reactive, computed, watch } from 'vue'
-import { isTimeBetween } from '../utils/timeUtils'
+import { isTimeBetween, timeToMinutes } from '../utils/timeUtils'
+import { gcj02ToWgs84 } from '../utils/coordUtils'
 
 const state = reactive({
   currentTime: '21:00',
@@ -42,19 +43,30 @@ export function useMapState() {
   ]
 
   const filteredData = computed(() => {
+    // 预计算当前时间的分钟数
+    const currentMinutes = timeToMinutes(state.currentTime)
+
     return state.foodData.filter(shop => {
       // 类别筛选
       if (!state.selectedCategories.includes(shop.category)) {
         return false
       }
 
-      // 营业时间筛选
-      if (!isTimeBetween(
-        state.currentTime,
-        shop.open_time,
-        shop.close_time
-      )) {
-        return false
+      // 营业时间筛选（使用预计算的时间索引）
+      if (!shop.isOpen24Hours) {
+        const { openMinutes, closeMinutes } = shop
+        // 处理跨天营业
+        if (closeMinutes < openMinutes) {
+          // 跨天：当前时间需要在 openMinutes 之后 或 closeMinutes 之前
+          if (currentMinutes < openMinutes && currentMinutes >= closeMinutes) {
+            return false
+          }
+        } else {
+          // 正常营业时间
+          if (currentMinutes < openMinutes || currentMinutes >= closeMinutes) {
+            return false
+          }
+        }
       }
 
       // 评分筛选 (直接使用原始评分)
@@ -134,8 +146,46 @@ export function useMapState() {
       // 直接使用 fetch 加载 JSON
       const foodResponse = await fetch(new URL('../assets/data/guiyang_food_data_fixed.json', import.meta.url))
       if (!foodResponse.ok) throw new Error(`HTTP error! status: ${foodResponse.status}`)
-      state.foodData = await foodResponse.json()
-      console.log(`美食数据加载成功: ${state.foodData.length} 条`)
+      let rawData = await foodResponse.json()
+
+      // 预处理数据：预先转换坐标并添加时间索引
+      const startTime = performance.now()
+      rawData = rawData.map(shop => {
+        const [lon, lat] = gcj02ToWgs84(shop.longitude, shop.latitude)
+
+        // 预计算营业时间范围（分钟数），方便快速过滤
+        let openMinutes = 0
+        let closeMinutes = 24 * 60
+        let isOpen24Hours = false
+
+        if (shop.open_time && shop.close_time) {
+          openMinutes = timeToMinutes(shop.open_time)
+          closeMinutes = timeToMinutes(shop.close_time)
+
+          // 处理跨天营业时间（如 22:00 - 02:00）
+          if (closeMinutes < openMinutes) {
+            isOpen24Hours = false
+          } else if (closeMinutes - openMinutes >= 23 * 60) {
+            // 营业超过23小时视为全天营业
+            isOpen24Hours = true
+          }
+        }
+
+        return {
+          ...shop,
+          // 预转换的 WGS84 坐标
+          wgs84_lon: lon,
+          wgs84_lat: lat,
+          // 预计算的时间索引
+          openMinutes,
+          closeMinutes,
+          isOpen24Hours
+        }
+      })
+
+      state.foodData = rawData
+      const preprocessTime = performance.now() - startTime
+      console.log(`美食数据加载成功: ${state.foodData.length} 条 (预处理耗时: ${preprocessTime.toFixed(0)}ms)`)
 
       console.log('开始加载路网数据...')
       const roadResponse = await fetch(new URL('../assets/data/guiyang_map_data.geojson', import.meta.url))

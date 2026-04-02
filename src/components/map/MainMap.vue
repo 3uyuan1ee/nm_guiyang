@@ -32,7 +32,6 @@ import { PathLayer } from 'deck.gl'
 import { PolygonLayer } from 'deck.gl'
 import { HeatmapLayer } from '@deck.gl/aggregation-layers'
 import { getCategoryColor } from '../../utils/colorUtils'
-import { gcj02ToWgs84 } from '../../utils/coordUtils'
 import { useDistrictStats } from '../../composables/useDistrictStats'
 import MapControls from './MapControls.vue'
 import Tooltip from '../ui/Tooltip.vue'
@@ -97,12 +96,156 @@ const hoveredDistrictStats = computed(() => {
 let deckInstance = null
 let terrainLayer = null
 
+// ========== 样式配置（移到函数外部，避免重复创建）==========
+
+// 道路样式配置：层次化设计
+const ROAD_STYLES = {
+  // 高速公路 - 最醒目，金色系
+  'motorway': { width: 20, color: [255, 215, 0], opacity: 0.7, priority: 1 },
+  'motorway_link': { width: 12, color: [255, 223, 100], opacity: 0.6, priority: 2 },
+  // 干线公路 - 橙红色系
+  'trunk': { width: 16, color: [255, 140, 80], opacity: 0.65, priority: 3 },
+  'trunk_link': { width: 10, color: [255, 160, 120], opacity: 0.55, priority: 4 },
+  // 主要道路 - 暖黄色系
+  'primary': { width: 14, color: [255, 200, 120], opacity: 0.6, priority: 5 },
+  'primary_link': { width: 8, color: [255, 210, 150], opacity: 0.5, priority: 6 },
+  // 次要道路 - 中性灰黄
+  'secondary': { width: 10, color: [200, 190, 170], opacity: 0.5, priority: 7 },
+  'secondary_link': { width: 6, color: [210, 200, 180], opacity: 0.45, priority: 8 },
+  // 三级道路 - 冷灰色
+  'tertiary': { width: 6, color: [160, 170, 180], opacity: 0.4, priority: 9 },
+  'tertiary_link': { width: 4, color: [170, 180, 190], opacity: 0.35, priority: 10 },
+  // 居住区道路 - 深灰
+  'residential': { width: 3, color: [100, 110, 120], opacity: 0.3, priority: 11 },
+  // 人行道
+  'pedestrian': { width: 2, color: [140, 200, 220], opacity: 0.25, priority: 12 }
+}
+
+// 水系样式配置
+const WATER_STYLES = {
+  'river': { width: 15, color: [30, 64, 175], opacity: 0.8 },      // 河流
+  'stream': { width: 5, color: [125, 211, 252], opacity: 0.6 },    // 溪流
+  'canal': { width: 8, color: [59, 130, 246], opacity: 0.65 },     // 运河
+  'drain': { width: 3, color: [147, 197, 253], opacity: 0.5 },     // 排水沟
+  'dam': { width: 10, color: [59, 130, 246], opacity: 0.7 }        // 水坝
+}
+
+// 湖泊样式配置
+const LAKE_STYLES = {
+  'water': { color: [15, 35, 60], opacity: 0.6, elevation: 2 },           // 一般湖泊 - 深暗蓝
+  'reservoir': { color: [20, 45, 75], opacity: 0.65, elevation: 3 },      // 水库 - 稍亮
+  'lake': { color: [15, 35, 60], opacity: 0.6, elevation: 2 }             // 湖泊
+}
+
+// ========== 数据预处理缓存 ==========
+let processedRoadData = null
+let processedWaterData = null
+let processedLakeData = null
+let lastRoadDataKey = null
+
+// 预处理路网数据
+function preprocessRoadData(roadData) {
+  if (!roadData || !roadData.features) return { roads: [], majorRoads: [] }
+
+  const dataKey = roadData.features.length
+  if (processedRoadData && lastRoadDataKey === dataKey) {
+    return processedRoadData
+  }
+
+  const startTime = performance.now()
+
+  // 过滤并预处理道路数据
+  const roadFeatures = roadData.features
+    .filter(f => f.properties && typeof f.properties.highway !== 'undefined' &&
+            f.geometry && (f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString'))
+    .map(f => {
+      if (f.geometry.type === 'MultiLineString') {
+        return f.geometry.coordinates.map(coords => ({
+          ...f,
+          geometry: { type: 'LineString', coordinates: coords }
+        }))
+      }
+      return f
+    })
+    .flat()
+
+  // 按优先级排序
+  const sortedRoads = roadFeatures.sort((a, b) => {
+    const styleA = ROAD_STYLES[a.properties?.highway] || ROAD_STYLES['residential']
+    const styleB = ROAD_STYLES[b.properties?.highway] || ROAD_STYLES['residential']
+    return styleA.priority - styleB.priority
+  })
+
+  // 筛选重要道路
+  const majorRoads = sortedRoads.filter(d => {
+    const h = d.properties?.highway
+    return ['motorway', 'motorway_link', 'trunk', 'trunk_link', 'primary', 'primary_link'].includes(h)
+  })
+
+  processedRoadData = { roads: sortedRoads, majorRoads }
+  lastRoadDataKey = dataKey
+
+  console.log(`路网预处理: ${roadFeatures.length} 条 (耗时: ${(performance.now() - startTime).toFixed(0)}ms)`)
+  return processedRoadData
+}
+
+// 预处理水系数据（河流等 LineString）
+function preprocessWaterData(roadData) {
+  if (!roadData || !roadData.features) return []
+
+  const waterFeatures = roadData.features
+    .filter(f => f.properties && f.properties.waterway &&
+            f.geometry && (f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString'))
+    .map(f => {
+      if (f.geometry.type === 'MultiLineString') {
+        return f.geometry.coordinates.map(coords => ({
+          ...f,
+          geometry: { type: 'LineString', coordinates: coords }
+        }))
+      }
+      return f
+    })
+    .flat()
+
+  return waterFeatures
+}
+
+// 预处理湖泊数据（Polygon）
+function preprocessLakeData(roadData) {
+  if (!roadData || !roadData.features) return []
+
+  const lakeFeatures = roadData.features
+    .filter(f => {
+      // 过滤水体类型：natural=water 或 water=lake/reservoir 等
+      const props = f.properties || {}
+      const isWater = props.natural === 'water' ||
+                      props.water === 'lake' ||
+                      props.water === 'reservoir' ||
+                      props.water === 'pond'
+      return isWater && f.geometry &&
+             (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon')
+    })
+    .map(f => {
+      // 处理 MultiPolygon
+      if (f.geometry.type === 'MultiPolygon') {
+        return f.geometry.coordinates.map(coords => ({
+          ...f,
+          geometry: { type: 'Polygon', coordinates: coords }
+        }))
+      }
+      return f
+    })
+    .flat()
+
+  return lakeFeatures
+}
+
 function updateLayers() {
   if (!deckInstance) return
 
   const layers = []
 
-  // 暂时禁用地形层，测试是否是它导致白色图层
+  // 暂时禁用地形层
   /*
   if (!terrainLayer) {
     terrainLayer = new TerrainLayer({
@@ -141,288 +284,140 @@ function updateLayers() {
     return [coordinates]
   }
 
-  // 生成圆形柱体（使用更多顶点近似圆形）
-  function createCircularColumn(lon, lat, radius = 0.0001, segments = 16) {
-    const coordinates = []
-    for (let i = 0; i < segments; i++) {
-      const angle = (2 * Math.PI / segments) * i
-      coordinates.push([
-        lon + radius * Math.cos(angle),
-        lat + radius * Math.sin(angle)
-      ])
-    }
-    coordinates.push(coordinates[0]) // 闭合多边形
-    return [coordinates]
+  // ========== 湖泊层（最底层，使用 PolygonLayer）==========
+  const lakeFeatures = preprocessLakeData(props.roadData)
+  if (lakeFeatures.length > 0) {
+    // 统计湖泊类型
+    const lakeTypes = {}
+    lakeFeatures.forEach(f => {
+      const waterType = f.properties?.water || f.properties?.natural || 'unknown'
+      lakeTypes[waterType] = (lakeTypes[waterType] || 0) + 1
+    })
+    console.log(`湖泊层: ${lakeFeatures.length} 个`, lakeTypes)
+
+    const lakeLayer = new PolygonLayer({
+      id: 'lakes',
+      data: lakeFeatures,
+      getPolygon: d => d.geometry.coordinates,
+      getFillColor: d => {
+        const waterType = d.properties?.water || d.properties?.natural || 'water'
+        return LAKE_STYLES[waterType]?.color || LAKE_STYLES.water.color
+      },
+      getElevation: d => {
+        const waterType = d.properties?.water || d.properties?.natural || 'water'
+        return LAKE_STYLES[waterType]?.elevation || LAKE_STYLES.water.elevation
+      },
+      fill: true,
+      opacity: d => {
+        const waterType = d.properties?.water || d.properties?.natural || 'water'
+        return LAKE_STYLES[waterType]?.opacity || LAKE_STYLES.water.opacity
+      },
+      pickable: false
+    })
+    layers.push(lakeLayer)
   }
 
-  // 水系层
-  if (props.roadData && props.roadData.features) {
-    const waterFeatures = props.roadData.features
-      .filter(f => {
-        return f.properties &&
-               f.properties.waterway &&
-               f.geometry &&
-               (f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString')
-      })
-      .map(f => {
-        if (f.geometry.type === 'MultiLineString') {
-          return f.geometry.coordinates.map(coords => ({
-            ...f,
-            geometry: { type: 'LineString', coordinates: coords }
-          }))
-        }
-        return f
-      })
-      .flat()
+  // ========== 河流层（LineString 水系）==========
+  const waterFeatures = preprocessWaterData(props.roadData)
+  if (waterFeatures.length > 0) {
+    // 统计各类型数量
+    const typeCount = {}
+    waterFeatures.forEach(f => {
+      const type = f.properties?.waterway
+      typeCount[type] = (typeCount[type] || 0) + 1
+    })
+    console.log(`河流层: ${waterFeatures.length} 条`, typeCount)
 
-    if (waterFeatures.length > 0) {
-      // 定义水系宽度和颜色（增加对比度）
-      const WATER_STYLES = {
-        'river': {
-          width: 15,                // 河流：15米宽
-          color: [30, 64, 175],     // 深蓝色 #1e40af
-          opacity: 0.8
-        },
-        'stream': {
-          width: 5,                 // 溪流：5米宽
-          color: [125, 211, 252],   // 浅蓝色 #7dd3fc
-          opacity: 0.6
-        },
-        'dam': {
-          width: 10,                // 水坝：10米宽
-          color: [59, 130, 246],    // 中蓝色 #3b82f6
-          opacity: 0.7
-        }
-      }
-
-      // 统计各类型数量
-      const typeCount = {}
-      waterFeatures.forEach(f => {
-        const type = f.properties?.waterway
-        typeCount[type] = (typeCount[type] || 0) + 1
-      })
-      console.log(`水系层详情:`, typeCount)
-
-      const waterLayer = new PathLayer({
-        id: 'water-system',
-        data: waterFeatures,
-        getPath: d => d.geometry.coordinates,
-        getColor: d => {
-          const waterway = d.properties?.waterway
-          return WATER_STYLES[waterway]?.color || [59, 130, 246]
-        },
-        getWidth: d => {
-          const waterway = d.properties?.waterway
-          return WATER_STYLES[waterway]?.width || 8
-        },
-        opacity: d => {
-          const waterway = d.properties?.waterway
-          return WATER_STYLES[waterway]?.opacity || 0.7
-        },
-        widthMinPixels: 1.5,
-        widthScale: 1,
-        pickable: false
-      })
-
-      layers.push(waterLayer)
-      console.log(`水系层: ${waterFeatures.length} 条`)
-    }
+    const waterLayer = new PathLayer({
+      id: 'water-rivers',
+      data: waterFeatures,
+      getPath: d => d.geometry.coordinates,
+      getColor: d => {
+        const waterway = d.properties?.waterway
+        return WATER_STYLES[waterway]?.color || [59, 130, 246]
+      },
+      getWidth: d => {
+        const waterway = d.properties?.waterway
+        return WATER_STYLES[waterway]?.width || 8
+      },
+      opacity: d => {
+        const waterway = d.properties?.waterway
+        return WATER_STYLES[waterway]?.opacity || 0.7
+      },
+      widthMinPixels: 1.5,
+      widthScale: 1,
+      pickable: false
+    })
+    layers.push(waterLayer)
   }
 
-  // 路网层
-  if (props.roadData && props.roadData.features) {
-    // 过滤并预处理道路数据
-    const roadFeatures = props.roadData.features
-      .filter(f => {
-        // 只保留有 highway 属性且是 LineString 类型的特征
-        return f.properties &&
-               typeof f.properties.highway !== 'undefined' &&
-               f.geometry &&
-               (f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString')
-      })
-      .map(f => {
-        // 对于 MultiLineString，拆分成多个 LineString
-        if (f.geometry.type === 'MultiLineString') {
-          return f.geometry.coordinates.map(coords => ({
-            ...f,
-            geometry: { type: 'LineString', coordinates: coords }
-          }))
-        }
-        return f
-      })
-      .flat()
+  // ========== 路网层（使用预处理数据）==========
+  const { roads: sortedRoads, majorRoads } = preprocessRoadData(props.roadData)
 
-    console.log(`路网数据: 原始 ${props.roadData.features.length} 条, 过滤后 ${roadFeatures.length} 条`)
+  if (sortedRoads.length > 0) {
+    // 底层：所有道路的基础轮廓
+    const baseRoadLayer = new PathLayer({
+      id: 'road-base',
+      data: sortedRoads,
+      getPath: d => d.geometry.coordinates,
+      getColor: () => [60, 65, 75],
+      getWidth: d => {
+        const style = ROAD_STYLES[d.properties?.highway] || ROAD_STYLES['residential']
+        return style.width * 1.5
+      },
+      opacity: 0.15,
+      widthMinPixels: 1,
+      widthScale: 1,
+      pickable: false
+    })
+    layers.push(baseRoadLayer)
 
-    if (roadFeatures.length > 0) {
-      // 道路样式配置：层次化设计
-      const ROAD_STYLES = {
-        // 高速公路 - 最醒目，金色系
-        'motorway': {
-          width: 20,
-          color: [255, 215, 0],      // 金色
-          opacity: 0.7,
-          priority: 1
-        },
-        'motorway_link': {
-          width: 12,
-          color: [255, 223, 100],    // 浅金色
-          opacity: 0.6,
-          priority: 2
-        },
-        // 干线公路 - 橙红色系，体现重要性
-        'trunk': {
-          width: 16,
-          color: [255, 140, 80],     // 橙红色
-          opacity: 0.65,
-          priority: 3
-        },
-        'trunk_link': {
-          width: 10,
-          color: [255, 160, 120],    // 浅橙红
-          opacity: 0.55,
-          priority: 4
-        },
-        // 主要道路 - 暖黄色系
-        'primary': {
-          width: 14,
-          color: [255, 200, 120],    // 暖黄色
-          opacity: 0.6,
-          priority: 5
-        },
-        'primary_link': {
-          width: 8,
-          color: [255, 210, 150],    // 浅暖黄
-          opacity: 0.5,
-          priority: 6
-        },
-        // 次要道路 - 中性灰黄
-        'secondary': {
-          width: 10,
-          color: [200, 190, 170],    // 灰黄色
-          opacity: 0.5,
-          priority: 7
-        },
-        'secondary_link': {
-          width: 6,
-          color: [210, 200, 180],    // 浅灰黄
-          opacity: 0.45,
-          priority: 8
-        },
-        // 三级道路 - 冷灰色
-        'tertiary': {
-          width: 6,
-          color: [160, 170, 180],    // 蓝灰色
-          opacity: 0.4,
-          priority: 9
-        },
-        'tertiary_link': {
-          width: 4,
-          color: [170, 180, 190],    // 浅蓝灰
-          opacity: 0.35,
-          priority: 10
-        },
-        // 居住区道路 - 深灰，低调
-        'residential': {
-          width: 3,
-          color: [100, 110, 120],    // 深灰色
-          opacity: 0.3,
-          priority: 11
-        },
-        // 人行道 - 特殊处理，虚线效果
-        'pedestrian': {
-          width: 2,
-          color: [140, 200, 220],    // 青色
-          opacity: 0.25,
-          priority: 12
-        }
-      }
+    // 主层：彩色道路
+    const mainRoadLayer = new PathLayer({
+      id: 'road-main',
+      data: sortedRoads,
+      getPath: d => d.geometry.coordinates,
+      getColor: d => {
+        const style = ROAD_STYLES[d.properties?.highway]
+        return style ? style.color : [100, 110, 120]
+      },
+      getWidth: d => {
+        const style = ROAD_STYLES[d.properties?.highway] || ROAD_STYLES['residential']
+        return style.width
+      },
+      opacity: d => {
+        const style = ROAD_STYLES[d.properties?.highway] || ROAD_STYLES['residential']
+        return style.opacity
+      },
+      widthMinPixels: 0.5,
+      widthScale: 1,
+      pickable: false
+    })
+    layers.push(mainRoadLayer)
 
-      // 按优先级排序，确保重要道路在上层
-      const sortedRoads = roadFeatures.sort((a, b) => {
-        const styleA = ROAD_STYLES[a.properties?.highway] || ROAD_STYLES['residential']
-        const styleB = ROAD_STYLES[b.properties?.highway] || ROAD_STYLES['residential']
-        return styleA.priority - styleB.priority
-      })
-
-      // 创建多个道路层以增加层次感
-      // 底层：所有道路的基础轮廓（稍微加宽、更透明）
-      const baseRoadLayer = new PathLayer({
-        id: 'road-base',
-        data: sortedRoads,
-        getPath: d => d.geometry.coordinates,
-        getColor: d => {
-          const style = ROAD_STYLES[d.properties?.highway] || ROAD_STYLES['residential']
-          return [60, 65, 75]  // 统一深灰底色
-        },
-        getWidth: d => {
-          const style = ROAD_STYLES[d.properties?.highway] || ROAD_STYLES['residential']
-          return style.width * 1.5  // 底层稍宽
-        },
-        opacity: 0.15,
-        widthMinPixels: 1,
-        widthScale: 1,
-        pickable: false
-      })
-      layers.push(baseRoadLayer)
-
-      // 主层：彩色道路
-      const mainRoadLayer = new PathLayer({
-        id: 'road-main',
-        data: sortedRoads,
+    // 高光层：仅重要道路
+    if (majorRoads.length > 0) {
+      const highlightRoadLayer = new PathLayer({
+        id: 'road-highlight',
+        data: majorRoads,
         getPath: d => d.geometry.coordinates,
         getColor: d => {
           const style = ROAD_STYLES[d.properties?.highway]
-          if (style) return style.color
-          return [100, 110, 120]  // 默认深灰
+          return style ? style.color.map(c => Math.min(255, c + 40)) : [180, 180, 180]
         },
         getWidth: d => {
-          const style = ROAD_STYLES[d.properties?.highway] || ROAD_STYLES['residential']
-          return style.width
+          const style = ROAD_STYLES[d.properties?.highway]
+          return style ? style.width * 0.3 : 2
         },
-        opacity: d => {
-          const style = ROAD_STYLES[d.properties?.highway] || ROAD_STYLES['residential']
-          return style.opacity
-        },
+        opacity: 0.8,
         widthMinPixels: 0.5,
         widthScale: 1,
         pickable: false
       })
-      layers.push(mainRoadLayer)
-
-      // 高光层：仅重要道路（motorway, trunk, primary）
-      const majorRoads = sortedRoads.filter(d => {
-        const h = d.properties?.highway
-        return ['motorway', 'motorway_link', 'trunk', 'trunk_link', 'primary', 'primary_link'].includes(h)
-      })
-
-      if (majorRoads.length > 0) {
-        const highlightRoadLayer = new PathLayer({
-          id: 'road-highlight',
-          data: majorRoads,
-          getPath: d => d.geometry.coordinates,
-          getColor: d => {
-            const style = ROAD_STYLES[d.properties?.highway]
-            if (style) {
-              // 高光层使用更亮的颜色
-              return style.color.map(c => Math.min(255, c + 40))
-            }
-            return [180, 180, 180]
-          },
-          getWidth: d => {
-            const style = ROAD_STYLES[d.properties?.highway]
-            return style ? style.width * 0.3 : 2  // 细高光线
-          },
-          opacity: 0.8,
-          widthMinPixels: 0.5,
-          widthScale: 1,
-          pickable: false
-        })
-        layers.push(highlightRoadLayer)
-      }
-
-      console.log(`路网层: ${sortedRoads.length} 条 (底色+主色+高光)`)
+      layers.push(highlightRoadLayer)
     }
+
+    console.log(`路网层: ${sortedRoads.length} 条 (底色+主色+高光)`)
   }
 
   // 区域高亮层
@@ -497,14 +492,11 @@ function updateLayers() {
 
   // 美食密度热力图层 - 展示老城vs新城的分布差异
   if (props.showHeatmap && props.foodData && props.foodData.length > 0) {
-    // 转换坐标用于热力图
-    const heatmapData = props.foodData.map(shop => {
-      const [lon, lat] = gcj02ToWgs84(shop.longitude, shop.latitude)
-      return {
-        coordinates: [lon, lat],
-        weight: 1  // 每个餐厅权重为1，纯密度分析
-      }
-    })
+    // 使用预转换的坐标用于热力图
+    const heatmapData = props.foodData.map(shop => ({
+      coordinates: [shop.wgs84_lon, shop.wgs84_lat],
+      weight: 1  // 每个餐厅权重为1，纯密度分析
+    }))
 
     const heatmapLayer = new HeatmapLayer({
       id: 'food-heatmap',
@@ -533,9 +525,11 @@ function updateLayers() {
 
   // 餐厅光柱层（使用 PolygonLayer 构建六边形柱体）
   if (props.foodData && props.foodData.length > 0) {
-    // 预处理数据：转换坐标并生成六边形，计算放大的高度和动态半径
+    // 预处理数据：使用预转换的坐标并生成六边形，计算放大的高度和动态半径
     const polygonData = props.foodData.map(shop => {
-      const [lon, lat] = gcj02ToWgs84(shop.longitude, shop.latitude)
+      // 使用预转换的 WGS84 坐标
+      const lon = shop.wgs84_lon
+      const lat = shop.wgs84_lat
 
       let elevation
       let radius
