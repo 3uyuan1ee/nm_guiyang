@@ -756,12 +756,22 @@ function handleResetView() {
 }
 
 function handleToggle2D() {
-  const newPitch = props.viewState.pitch > 0 ? 0 : 60
+  const currentPitch = props.viewState.pitch
+  const newPitch = currentPitch > 0 ? 0 : 60
+  console.log(`[handleToggle2D] 当前pitch: ${currentPitch}, 切换到: ${newPitch}`)
   emit('view-state-change', {
     ...props.viewState,
     pitch: newPitch
   })
-  console.log(`切换视图: pitch ${props.viewState.pitch} -> ${newPitch}`)
+  // 直接更新 deck 实例
+  if (deckInstance) {
+    deckInstance.setProps({
+      viewState: {
+        ...props.viewState,
+        pitch: newPitch
+      }
+    })
+  }
 }
 
 function handleExportData() {
